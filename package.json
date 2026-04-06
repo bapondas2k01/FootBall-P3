@@ -1,0 +1,22 @@
+{
+  "name": "template-gambo-starter",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "download-assets": "node download-assets.js",
+    "integrate-assets": "node integrate-local-assets.js"
+  },
+  "dependencies": {
+    "phaser": "3.87.0",
+    "phaser3-rex-plugins": "^1.80.16"
+  },
+  "devDependencies": {
+    "globals": "^15.14.0",
+    "typescript": "~5.8.3",
+    "vite": "^6.2.6"
+  }
+}

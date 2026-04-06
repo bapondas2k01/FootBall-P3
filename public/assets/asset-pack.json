@@ -1,0 +1,508 @@
+{
+  "fonts": {
+    "files": [
+      {
+        "url": "fonts/retro-pixel-arcade.otf.woff2",
+        "type": "font",
+        "key": "RetroPixel",
+        "fontType": "opentype"
+      }
+    ]
+  },
+  "ui_images": {
+    "files": [
+      {
+        "type": "image",
+        "key": "game_title",
+        "url": "images/game_title.png"
+      },
+      {
+        "type": "image",
+        "key": "play_button",
+        "url": "images/play_button.png"
+      },
+      {
+        "type": "image",
+        "key": "victory_banner",
+        "url": "images/victory_banner.png"
+      },
+      {
+        "type": "image",
+        "key": "restart_button",
+        "url": "images/restart_button.png"
+      },
+      {
+        "type": "image",
+        "key": "back_button",
+        "url": "images/back_button.png"
+      },
+      {
+        "type": "image",
+        "key": "goal_text",
+        "url": "images/goal_text.png"
+      },
+      {
+        "type": "image",
+        "key": "stun_stars",
+        "url": "images/stun_stars.png"
+      }
+    ]
+  },
+  "backgrounds": {
+    "files": [
+      {
+        "type": "image",
+        "key": "clean_soccer_field_background",
+        "url": "images/clean_soccer_field_background.png"
+      },
+      {
+        "type": "image",
+        "key": "soccer_field_background",
+        "url": "images/soccer_field_background.png"
+      }
+    ]
+  },
+  "game_objects": {
+    "files": [
+      {
+        "type": "image",
+        "key": "soccer_ball",
+        "url": "images/soccer_ball.png"
+      },
+      {
+        "type": "image",
+        "key": "goal_left",
+        "url": "images/goal_left.png"
+      },
+      {
+        "type": "image",
+        "key": "goal_right",
+        "url": "images/goal_right.png"
+      }
+    ]
+  },
+  "player_animations": {
+    "files": [
+      {
+        "type": "image",
+        "key": "player1_idle_frame1",
+        "url": "images/player1_idle_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_idle_frame2",
+        "url": "images/player1_idle_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_walk_frame1",
+        "url": "images/player1_walk_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_walk_frame2",
+        "url": "images/player1_walk_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_jump_frame1",
+        "url": "images/player1_jump_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_jump_frame2",
+        "url": "images/player1_jump_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_slide_frame1",
+        "url": "images/player1_slide_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_slide_frame2",
+        "url": "images/player1_slide_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_kick_frame1",
+        "url": "images/player1_kick_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_kick_frame2",
+        "url": "images/player1_kick_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_idle_frame1",
+        "url": "images/player2_idle_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_idle_frame2",
+        "url": "images/player2_idle_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_walk_frame1",
+        "url": "images/player2_walk_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_walk_frame2",
+        "url": "images/player2_walk_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_jump_frame1",
+        "url": "images/player2_jump_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_jump_frame2",
+        "url": "images/player2_jump_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_slide_frame1",
+        "url": "images/player2_slide_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_slide_frame2",
+        "url": "images/player2_slide_frame2.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_kick_frame1",
+        "url": "images/player2_kick_frame1.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_kick_frame2",
+        "url": "images/player2_kick_frame2.png"
+      }
+    ]
+  },
+  "victory_poses": {
+    "files": [
+      {
+        "type": "image",
+        "key": "player1_victory_pose",
+        "url": "images/player1_victory_pose.png"
+      },
+      {
+        "type": "image",
+        "key": "player1_defeat_pose",
+        "url": "images/player1_defeat_pose.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_victory_pose",
+        "url": "images/player2_victory_pose.png"
+      },
+      {
+        "type": "image",
+        "key": "player2_defeat_pose",
+        "url": "images/player2_defeat_pose.png"
+      },
+      {
+        "type": "image",
+        "key": "players_draw_pose",
+        "url": "images/players_draw_pose.png"
+      }
+    ]
+  },
+  "sound_effects": {
+    "files": [
+      {
+        "type": "audio",
+        "key": "button_click",
+        "url": "audio/button_click_3.mp3"
+      },
+      {
+        "type": "audio",
+        "key": "game_start",
+        "url": "audio/game_start.mp3"
+      },
+      {
+        "type": "audio",
+        "key": "ball_kick",
+        "url": "audio/ball_kick.mp3"
+      },
+      {
+        "type": "audio",
+        "key": "ball_bounce",
+        "url": "audio/ball_bounce.mp3"
+      },
+      {
+        "type": "audio",
+        "key": "goal_cheer",
+        "url": "audio/goal_cheer.mp3"
+      },
+      {
+        "type": "audio",
+        "key": "whistle",
+        "url": "audio/whistle_2.mp3"
+      },
+      {
+        "type": "audio",
+        "key": "slide_tackle",
+        "url": "audio/slide_tackle_2.mp3"
+      },
+      {
+        "type": "audio",
+        "key": "goal_post_hit",
+        "url": "audio/goal_post_hit.mp3"
+      },
+      {
+        "type": "audio",
+        "key": "victory_fanfare",
+        "url": "audio/victory_fanfare.mp3"
+      }
+    ]
+  },
+  "background_musics": {
+    "files": [
+      {
+        "type": "audio",
+        "key": "soccer_theme",
+        "url": "audio/soccer_theme.wav"
+      },
+      {
+        "type": "audio",
+        "key": "soccer_match_theme",
+        "url": "audio/soccer_match_theme_2.wav"
+      }
+    ]
+  },
+  "meta": {
+    "app": "Gambo AI",
+    "version": 1,
+    "showAllFilesInBlocks": false
+  },
+  "animation_sequences": {
+    "files": [
+      {
+        "type": "animation_sequence",
+        "key": "player_animation_sequence_1",
+        "frames": [
+          "animations/frame_1_1.png",
+          "animations/frame_1_2.png",
+          "animations/frame_1_3.png",
+          "animations/frame_1_4.png",
+          "animations/frame_1_5.png",
+          "animations/frame_1_6.png",
+          "animations/frame_1_7.png",
+          "animations/frame_1_8.png",
+          "animations/frame_1_9.png",
+          "animations/frame_1_10.png",
+          "animations/frame_1_11.png",
+          "animations/frame_1_12.png",
+          "animations/frame_1_13.png",
+          "animations/frame_1_14.png",
+          "animations/frame_1_15.png",
+          "animations/frame_1_16.png",
+          "animations/frame_1_17.png",
+          "animations/frame_1_18.png",
+          "animations/frame_1_19.png",
+          "animations/frame_1_20.png",
+          "animations/frame_1_21.png",
+          "animations/frame_1_22.png",
+          "animations/frame_1_23.png",
+          "animations/frame_1_24.png",
+          "animations/frame_1_25.png",
+          "animations/frame_1_26.png",
+          "animations/frame_1_27.png",
+          "animations/frame_1_28.png",
+          "animations/frame_1_29.png",
+          "animations/frame_1_30.png",
+          "animations/frame_1_31.png",
+          "animations/frame_1_32.png",
+          "animations/frame_1_33.png",
+          "animations/frame_1_34.png",
+          "animations/frame_1_35.png",
+          "animations/frame_1_36.png",
+          "animations/frame_1_37.png"
+        ],
+        "frameRate": 10,
+        "repeat": -1,
+        "description": "Player animation sequence 1 (37 frames)"
+      },
+      {
+        "type": "animation_sequence",
+        "key": "player_animation_sequence_2",
+        "frames": [
+          "animations/frame_2_1.png",
+          "animations/frame_2_2.png",
+          "animations/frame_2_3.png",
+          "animations/frame_2_4.png",
+          "animations/frame_2_5.png",
+          "animations/frame_2_6.png",
+          "animations/frame_2_7.png",
+          "animations/frame_2_8.png",
+          "animations/frame_2_9.png",
+          "animations/frame_2_10.png",
+          "animations/frame_2_11.png",
+          "animations/frame_2_12.png",
+          "animations/frame_2_13.png",
+          "animations/frame_2_14.png",
+          "animations/frame_2_15.png",
+          "animations/frame_2_16.png",
+          "animations/frame_2_17.png",
+          "animations/frame_2_18.png",
+          "animations/frame_2_19.png",
+          "animations/frame_2_20.png",
+          "animations/frame_2_21.png",
+          "animations/frame_2_22.png",
+          "animations/frame_2_23.png",
+          "animations/frame_2_24.png",
+          "animations/frame_2_25.png",
+          "animations/frame_2_26.png",
+          "animations/frame_2_27.png",
+          "animations/frame_2_28.png",
+          "animations/frame_2_29.png",
+          "animations/frame_2_30.png",
+          "animations/frame_2_31.png",
+          "animations/frame_2_32.png",
+          "animations/frame_2_33.png",
+          "animations/frame_2_34.png",
+          "animations/frame_2_35.png",
+          "animations/frame_2_36.png",
+          "animations/frame_2_37.png"
+        ],
+        "frameRate": 10,
+        "repeat": -1,
+        "description": "Player animation sequence 2 (37 frames)"
+      }
+    ]
+  },
+  "tilesets": {
+    "files": [
+      {
+        "type": "image",
+        "key": "soccer_field_tileset",
+        "url": "animations/soccer_field_tileset.png"
+      }
+    ]
+  },
+  "player_variants": {
+    "files": [
+      {
+        "type": "image",
+        "key": "player_blue_back",
+        "url": "images/player_blue_back_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_blue_front",
+        "url": "images/player_blue_front_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_blue_side",
+        "url": "images/player_blue_side_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_blue_three",
+        "url": "images/player_blue_three_views.png"
+      },
+      {
+        "type": "image",
+        "key": "player_red_back",
+        "url": "images/player_red_back_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_red_front",
+        "url": "images/player_red_front_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_red_side",
+        "url": "images/player_red_side_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_red_three",
+        "url": "images/player_red_three_views.png"
+      },
+      {
+        "type": "image",
+        "key": "player_messi_back",
+        "url": "images/梅西风格球员_back_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_messi_front",
+        "url": "images/梅西风格球员_front_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_messi_side",
+        "url": "images/梅西风格球员_side_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_messi_three",
+        "url": "images/梅西风格球员_three_views.png"
+      },
+      {
+        "type": "image",
+        "key": "player_ronaldo_back",
+        "url": "images/C罗风格球员_back_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_ronaldo_front",
+        "url": "images/C罗风格球员_front_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_ronaldo_side",
+        "url": "images/C罗风格球员_side_view.png"
+      },
+      {
+        "type": "image",
+        "key": "player_ronaldo_three",
+        "url": "images/C罗风格球员_three_views.png"
+      }
+    ]
+  },
+  "goal_variants": {
+    "files": [
+      {
+        "type": "image",
+        "key": "goal_cartoon_left",
+        "url": "images/cartoon_goal_left.png"
+      },
+      {
+        "type": "image",
+        "key": "goal_cartoon_right",
+        "url": "images/cartoon_goal_right.png"
+      },
+      {
+        "type": "image",
+        "key": "goal_fixed_left",
+        "url": "images/fixed_goal_left.png"
+      },
+      {
+        "type": "image",
+        "key": "goal_fixed_right",
+        "url": "images/fixed_goal_right.png"
+      },
+      {
+        "type": "image",
+        "key": "goal_post_left",
+        "url": "images/left_goal_post.png"
+      },
+      {
+        "type": "image",
+        "key": "goal_post_right",
+        "url": "images/right_goal_post.png"
+      }
+    ]
+  }
+}
