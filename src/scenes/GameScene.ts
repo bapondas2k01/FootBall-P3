@@ -39,7 +39,6 @@ export default class GameScene extends Phaser.Scene {
   private wasdKeys!: { W: Phaser.Input.Keyboard.Key, A: Phaser.Input.Keyboard.Key, S: Phaser.Input.Keyboard.Key, D: Phaser.Input.Keyboard.Key }
   private spaceKey!: Phaser.Input.Keyboard.Key
   private shiftKey!: Phaser.Input.Keyboard.Key
-  private pKey!: Phaser.Input.Keyboard.Key
   
   // Sounds
   private backgroundMusic!: Phaser.Sound.BaseSound
@@ -219,6 +218,19 @@ export default class GameScene extends Phaser.Scene {
     
     // Listen for game end event
     this.events.on("gameEnd", this.handleGameEnd, this)
+    
+    // Listen for menu pause/resume events
+    this.events.on("pauseGame", () => {
+      if (!this.gameUI.isPaused()) {
+        this.pauseGame()
+      }
+    }, this)
+    
+    this.events.on("resumeGame", () => {
+      if (this.gameUI.isPaused()) {
+        this.resumeGame()
+      }
+    }, this)
   }
 
   private setupInput(): void {
@@ -227,16 +239,6 @@ export default class GameScene extends Phaser.Scene {
     this.wasdKeys = this.input.keyboard!.addKeys("W,A,S,D") as any
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
     this.shiftKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT)
-    this.pKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.P)
-    
-    // Pause/resume functionality
-    this.pKey.on("down", () => {
-      if (this.gameUI.isPaused()) {
-        this.resumeGame()
-      } else {
-        this.pauseGame()
-      }
-    })
     
     // ESC to go back to mode select
     const escKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
@@ -577,15 +579,21 @@ export default class GameScene extends Phaser.Scene {
       const kickInfo = player.getKickInfo()
       const ballDistance = Phaser.Math.Distance.Between(player.x, player.y, this.ball.x, this.ball.y)
       
-      console.log(`💥 Enhanced kick: type=${kickInfo.type}, distance=${kickInfo.distance}, ballDistance=${ballDistance.toFixed(1)}`)
+      console.log(`💥 Enhanced kick: type=${kickInfo.type}, distance=${kickInfo.distance}, charge=${(kickInfo.chargeAmount * 100).toFixed(0)}%`)
       
-      // Apply enhanced kick to ball with all parameters
-      this.ball.kick(kickInfo.force, player.y, kickInfo.type, ballDistance)
+      // Apply enhanced kick to ball with all parameters including charge and momentum
+      this.ball.kick(kickInfo.force, player.y, kickInfo.type, ballDistance, kickInfo.chargeAmount, kickInfo.playerVelocity)
       
       // **ONLY TRIGGER KICK ANIMATION IF NOT SLIDING**
+      // Only auto-kick for AI player (player2 in 1vAI mode)
+      // Manual players (player1, or both in 1v1) only kick via input
       if (!player.isSliding() && !player.isKicking()) {
-        player.triggerKick()
-        console.log(`🦵 Kick animation triggered for ${player.getPlayerSide()}`)
+        if (player === this.player2 && this.gameMode === "1vAI") {
+          player.triggerKick()
+          console.log(`🦵 Kick animation triggered for AI player`)
+        } else {
+          console.log(`⚠️ Auto-kick disabled for manual player - input only`)
+        }
       } else if (player.isSliding()) {
         console.log(`🏃 ${player.getPlayerSide()} sliding - no kick animation switch`)
       }

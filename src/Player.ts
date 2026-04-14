@@ -18,6 +18,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private lastDebugTime = 0 // For debug logging
   private standardHeight = 100 // Standard player height
   
+  // Kick charging system
+  private kickChargeAmount = 0 // 0-1, tracks charge level
+  private kickChargeStartTime = 0 // Track when kick key was first pressed
+  private maxChargeTime = 600 // Max charge time in ms (0-100% power)
+  private isKickKeyPressed = false // Track current kick key state
+  
   // Jump timer management
   private jumpFallTimer: Phaser.Time.TimerEvent | null = null
   private jumpLandTimer: Phaser.Time.TimerEvent | null = null
@@ -236,6 +242,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   public update(deltaTime: number, leftKey: boolean, rightKey: boolean, upKey: boolean, downKey: boolean, kickKey: boolean): void {
+    // **UPDATE KICK CHARGING STATUS**
+    this.updateKickCharging(kickKey)
+    
     // **REDUCE PHYSICS INTERFERENCE** - only fix size when actually different
     if (this.body) {
       const body = this.body as Phaser.Physics.Arcade.Body
@@ -736,7 +745,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   public getKickForce(): Phaser.Math.Vector2 {
-    // **DYNAMIC KICK FORCE** based on player state and movement
+    // **DYNAMIC KICK FORCE** based on player state, movement, and charge amount
     let kickForce = ballConfig.normalKickForce.value // Default force
     let verticalForce = -100 // Default upward force
     
@@ -768,8 +777,49 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       console.log(`⚽ ${this.playerSide} NORMAL KICK! Force: ${kickForce}, VerticalForce: ${verticalForce}`)
     }
     
+    // **APPLY CHARGE MULTIPLIER** - charged kicks are more powerful
+    const chargeMultiplier = 0.8 + (this.kickChargeAmount * 0.4) // 0.8x to 1.2x based on charge (0-100%)
+    kickForce *= chargeMultiplier
+    verticalForce *= chargeMultiplier
+    
+    // **MOMENTUM TRANSFER** - add player velocity to kick
+    const playerVelX = this.body ? this.body.velocity.x : 0
+    const momentumTransfer = playerVelX * 0.3 // 30% of player velocity transfers to ball
+    
     const kickDirection = this.facingRight ? 1 : -1
-    return new Phaser.Math.Vector2(kickDirection * kickForce, verticalForce)
+    return new Phaser.Math.Vector2(kickDirection * kickForce + momentumTransfer, verticalForce)
+  }
+  
+  private updateKickCharging(kickKeyPressed: boolean): void {
+    // Track kick key state transitions
+    if (!this.isKickKeyPressed && kickKeyPressed) {
+      // Key just pressed - start charging
+      this.kickChargeStartTime = this.scene.time.now
+      this.kickChargeAmount = 0
+      console.log(`⚡ ${this.playerSide} KICK CHARGE STARTED`)
+    }
+    
+    if (this.isKickKeyPressed && !kickKeyPressed) {
+      // Key just released - charge complete
+      if (this.kickChargeAmount > 0) {
+        console.log(`💥 ${this.playerSide} KICK RELEASED! Charge: ${(this.kickChargeAmount * 100).toFixed(0)}%`)
+      }
+      this.kickChargeAmount = 0
+    }
+    
+    // Update charge level if key is held
+    if (kickKeyPressed && this.kickCooldown <= 0 && this.playerState !== "sliding") {
+      const chargeTime = this.scene.time.now - this.kickChargeStartTime
+      this.kickChargeAmount = Math.min(chargeTime / this.maxChargeTime, 1.0) // Clamp to 0-1
+    } else {
+      this.kickChargeAmount = 0
+    }
+    
+    this.isKickKeyPressed = kickKeyPressed
+  }
+  
+  public getKickChargeAmount(): number {
+    return this.kickChargeAmount
   }
 
   public triggerKick(): void {
@@ -778,7 +828,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  public getKickInfo(): { force: Phaser.Math.Vector2, type: "normal" | "slide" | "jump", distance: number } {
+  public getKickInfo(): { force: Phaser.Math.Vector2, type: "normal" | "slide" | "jump", distance: number, chargeAmount: number, playerVelocity: Phaser.Math.Vector2 } {
     const speedX = this.body ? Math.abs(this.body.velocity.x) : 0
     const isRunning = speedX > 150
     const isSliding = this.playerState === "sliding"
@@ -797,8 +847,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       distance = 180 // Running kicks are strong
     }
     
+    // Distance multiplier based on charge amount
+    const chargeDistanceBonus = this.kickChargeAmount * 100 // Additional distance bonus from charge
+    distance += chargeDistanceBonus
+    
     const force = this.getKickForce()
-    return { force, type: kickType, distance }
+    const playerVelocity = this.body ? (this.body as Phaser.Physics.Arcade.Body).velocity.clone() : new Phaser.Math.Vector2(0, 0)
+    
+    return { force, type: kickType, distance, chargeAmount: this.kickChargeAmount, playerVelocity }
   }
 
   private clearJumpTimers(): void {

@@ -37,6 +37,9 @@ export class GameUI {
     
     // Create pause text (hidden initially)
     this.createPauseText()
+    
+    // Create menu button
+    this.createMenuButton()
   }
 
   private createScoreDisplay(): void {
@@ -322,5 +325,193 @@ export class GameUI {
     if (this.gameTimer) {
       this.gameTimer.destroy()
     }
+  }
+
+  private createMenuButton(): void {
+    const menuX = screenSize.width.value - 70
+    const menuY = 60
+    
+    // Menu button
+    const menuButton = this.scene.add.text(menuX, menuY, '☰ MENU', {
+      fontSize: '20px',
+      fontFamily: 'Arial Black',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 2,
+      align: 'center',
+      backgroundColor: '#ff4444',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5, 0.5)
+    .setInteractive({ useHandCursor: true })
+    .setDepth(100)
+    
+    let menuOpen = false
+    let menuPanel: any = null
+    let menuBg: any = null
+    let pauseBtn: any = null
+    let resumeBtn: any = null
+    let exitBtn: any = null
+    
+    const openMenu = () => {
+      if (menuOpen) return
+      menuOpen = true
+      
+      // Automatically pause game when menu opens
+      this.scene.events.emit('pauseGame')
+      
+      const centerX = screenSize.width.value / 2
+      const centerY = screenSize.height.value / 2
+      
+      // Full screen background
+      menuBg = this.scene.add.graphics()
+      menuBg.fillStyle(0x000000, 0.8)
+      menuBg.fillRect(0, 0, screenSize.width.value, screenSize.height.value)
+      menuBg.setDepth(101)
+      
+      // Menu panel in center
+      menuPanel = this.scene.add.graphics()
+      menuPanel.fillStyle(0x333333, 0.98)
+      menuPanel.fillRoundedRect(centerX - 200, centerY - 150, 400, 300, 20)
+      menuPanel.setDepth(102)
+      
+      // Menu title
+      this.scene.add.text(centerX, centerY - 100, 'MENU', {
+        fontSize: '40px',
+        fontFamily: 'Arial Black',
+        color: '#ffff00',
+        stroke: '#000000',
+        strokeThickness: 3,
+        align: 'center'
+      }).setOrigin(0.5, 0.5)
+      .setDepth(103)
+      
+      // Pause button
+      pauseBtn = this.scene.add.text(centerX, centerY - 30, 'PAUSE', {
+        fontSize: '28px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 2,
+        align: 'center',
+        padding: { x: 25, y: 10 }
+      }).setOrigin(0.5, 0.5)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(103)
+      
+      pauseBtn.on('pointerdown', () => {
+        closeMenu()
+        this.scene.events.emit('pauseGame')
+      })
+      
+      pauseBtn.on('pointerover', () => {
+        pauseBtn.setColor('#ffff00')
+      })
+      
+      pauseBtn.on('pointerout', () => {
+        pauseBtn.setColor('#ffffff')
+      })
+      
+      // Resume button
+      resumeBtn = this.scene.add.text(centerX, centerY + 40, 'RESUME', {
+        fontSize: '28px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 2,
+        align: 'center',
+        padding: { x: 25, y: 10 }
+      }).setOrigin(0.5, 0.5)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(103)
+      
+      resumeBtn.on('pointerdown', () => {
+        closeMenu()
+        this.scene.events.emit('resumeGame')
+      })
+      
+      resumeBtn.on('pointerover', () => {
+        resumeBtn.setColor('#ffff00')
+      })
+      
+      resumeBtn.on('pointerout', () => {
+        resumeBtn.setColor('#ffffff')
+      })
+      
+      // Exit button
+      exitBtn = this.scene.add.text(centerX, centerY + 110, 'EXIT TO MENU', {
+        fontSize: '28px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 2,
+        align: 'center',
+        padding: { x: 25, y: 10 }
+      }).setOrigin(0.5, 0.5)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(103)
+      
+      exitBtn.on('pointerdown', () => {
+        closeMenu()
+        this.scene.scene.start('ModeSelectScene')
+      })
+      
+      exitBtn.on('pointerover', () => {
+        exitBtn.setColor('#ff6666')
+      })
+      
+      exitBtn.on('pointerout', () => {
+        exitBtn.setColor('#ffffff')
+      })
+      
+      // Click outside to close
+      const closeArea = this.scene.add.zone(centerX, centerY, screenSize.width.value, screenSize.height.value)
+      closeArea.setInteractive()
+      closeArea.setDepth(100)
+      
+      closeArea.on('pointerdown', (pointer: any) => {
+        // Only close if clicking outside the menu panel
+        const panelLeft = centerX - 200
+        const panelRight = centerX + 200
+        const panelTop = centerY - 150
+        const panelBottom = centerY + 150
+        
+        if (pointer.x < panelLeft || pointer.x > panelRight || pointer.y < panelTop || pointer.y > panelBottom) {
+          closeMenu()
+        }
+      })
+    }
+    
+    const closeMenu = () => {
+      if (!menuOpen) return
+      menuOpen = false
+      
+      if (menuBg) menuBg.destroy()
+      if (menuPanel) menuPanel.destroy()
+      if (pauseBtn) pauseBtn.destroy()
+      if (resumeBtn) resumeBtn.destroy()
+      if (exitBtn) exitBtn.destroy()
+      
+      menuBg = null
+      menuPanel = null
+      pauseBtn = null
+      resumeBtn = null
+      exitBtn = null
+    }
+    
+    menuButton.on('pointerdown', () => {
+      if (menuOpen) {
+        closeMenu()
+      } else {
+        openMenu()
+      }
+    })
+    
+    menuButton.on('pointerover', () => {
+      menuButton.setColor('#ffff00')
+    })
+    
+    menuButton.on('pointerout', () => {
+      menuButton.setColor('#ffffff')
+    })
   }
 }

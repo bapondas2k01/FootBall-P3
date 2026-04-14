@@ -81,7 +81,7 @@ export class Ball extends Phaser.Physics.Arcade.Sprite {
     })
   }
 
-  public kick(force: Phaser.Math.Vector2, playerHeight: number, kickType: "normal" | "slide" | "jump" = "normal", distance: number = 100): void {
+  public kick(force: Phaser.Math.Vector2, playerHeight: number, kickType: "normal" | "slide" | "jump" = "normal", distance: number = 100, chargeAmount: number = 0, playerVelocity: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0)): void {
     if (!this.body) return
     
     const body = this.body as Phaser.Physics.Arcade.Body
@@ -114,18 +114,35 @@ export class Ball extends Phaser.Physics.Arcade.Sprite {
         break
     }
     
+    // **CHARGE-BASED TRAJECTORY** - charged kicks have steeper arc
+    if (chargeAmount > 0.5) {
+      // Charged kicks go higher
+      finalForce.y *= (0.5 + chargeAmount * 0.5) // 0.75x to 1.0x vertical
+    }
+    
+    // **MOMENTUM TRANSFER ENHANCEMENT** - ball inherits player movement
+    finalForce.x += playerVelocity.x * 0.2 // Additional momentum boost
+    
     // Apply maximum speed limit
     const magnitude = finalForce.length()
-    if (magnitude > ballConfig.maxSpeed.value * 1.2) { // Allow slightly higher max for kicks
+    if (magnitude > ballConfig.maxSpeed.value * 1.3) { // Allow slightly higher max for charged kicks
       finalForce.normalize()
-      finalForce.scale(ballConfig.maxSpeed.value * 1.2)
+      finalForce.scale(ballConfig.maxSpeed.value * 1.3)
     }
     
     body.setVelocity(finalForce.x, finalForce.y)
     
-    // **ENHANCED SPIN EFFECT** - more dramatic rotation
-    const spinSpeed = magnitude * 0.02 // Doubled spin effect
+    // **ENHANCED SPIN EFFECT** - spin based on charge and kick direction
+    let spinSpeed = magnitude * 0.02 // Base spin
+    spinSpeed *= (0.8 + chargeAmount * 0.4) // Charged kicks spin more
+    
+    // Spin direction based on force direction
     this.setAngularVelocity(force.x > 0 ? spinSpeed : -spinSpeed)
+    
+    // **CHARGE FEEDBACK** - console log for debug
+    if (chargeAmount > 0) {
+      console.log(`⚡ CHARGED KICK! Charge: ${(chargeAmount * 100).toFixed(0)}%, Spin: ${spinSpeed.toFixed(2)} rad/s`)
+    }
   }
 
   public onBounce(): void {
