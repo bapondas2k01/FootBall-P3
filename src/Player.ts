@@ -268,21 +268,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     
     if (this.isStunned) {
       this.handleStunnedState()
+      this.updateAnimation()
       return
     }
     
     if (this.playerState === "sliding") {
       this.handleSlidingState()
+      this.updateAnimation()
       return
     }
     
     if (this.playerState === "kicking") {
       this.handleKickingState()
+      this.updateAnimation()
       return
     }
     
     if (this.playerState === "jumping") {
       this.handleJumpingState(leftKey, rightKey)
+      this.updateAnimation()
       return
     }
     
