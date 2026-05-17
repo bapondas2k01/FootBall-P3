@@ -60,6 +60,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     
     this.setupPhysics()
     this.setupAnimations()
+    this.setupAnimationListeners() // Add frame update listeners
     this.setupSounds()
     this.setupPlayerSize()
     
@@ -78,16 +79,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (!this.body) return
     
     const body = this.body as Phaser.Physics.Arcade.Body
-    // **TEMPORARILY DISABLE GRAVITY** - to stop jittering while debugging collisions
-    // body.setGravityY(playerConfig.gravityY.value)
-    body.setGravityY(0)  // NO GRAVITY for now
+    // Enable proper gravity for realistic physics
+    body.setGravityY(playerConfig.gravityY.value)
     body.setCollideWorldBounds(true)
+    body.setBounce(0, 0) // No bounce
     
-    // Add damping to eliminate micro-movements
-    body.setDrag(500, 0) // Horizontal drag to stop micro-movements
+    // Add damping for acceleration/deceleration effect
+    body.setDrag(0.9, 0) // Horizontal drag coefficient for smooth acceleration
+    body.setAccelerationX(0) // Will be set by movement input
     body.setMaxVelocity(800, 1200) // Reasonable max velocities
     
-    console.log(`🔧 ${this.playerSide} Physics setup: gravity=0 (temporarily disabled)`)
+    console.log(`🔧 ${this.playerSide} Physics setup: gravity=${playerConfig.gravityY.value}`)
   }
 
   private setupPlayerSize(): void {
@@ -151,8 +153,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       },
       "player1_kick": {
         frames: [
-          { key: "player1_kick_frame1", duration: 100, origin: { x: 0.262, y: 1.0 } },
-          { key: "player1_kick_frame2", duration: 150, origin: { x: 0.262, y: 1.0 } }
+          { key: "player1_kick_frame1", duration: 150, origin: { x: 0.262, y: 1.0 } },
+          { key: "player1_kick_frame2", duration: 200, origin: { x: 0.262, y: 1.0 } }
         ]
       },
       "player2_idle": {
@@ -185,8 +187,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       },
       "player2_kick": {
         frames: [
-          { key: "player2_kick_frame1", duration: 100, origin: { x: 0.298, y: 1.0 } },
-          { key: "player2_kick_frame2", duration: 150, origin: { x: 0.298, y: 1.0 } }
+          { key: "player2_kick_frame1", duration: 150, origin: { x: 0.298, y: 1.0 } },
+          { key: "player2_kick_frame2", duration: 200, origin: { x: 0.298, y: 1.0 } }
         ]
       }
     }
@@ -203,6 +205,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
           repeat: key.includes("idle") || key.includes("walk") ? -1 : 0
         })
       }
+    })
+  }
+
+  private setupAnimationListeners(): void {
+    // Listen for animation frame changes to update origin dynamically
+    this.on("animationupdate", () => {
+      this.resetOriginAndOffset()
+    })
+    
+    // Reset origin when animation starts
+    this.on("animationstart", () => {
+      this.scene.time.delayedCall(0, () => {
+        this.resetOriginAndOffset()
+      })
     })
   }
 
@@ -377,52 +393,57 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body
     const groundLevel = 648 // **FIXED**: Match GameScene's groundTopY = 648
     
-    // **ENHANCED DEBUG** - track collision status
-    if (this.playerSide === "right") {
-      const currentTime = this.scene.time.now
-      if (!this.lastDebugTime || currentTime - this.lastDebugTime > 500) {
-        console.log(`📊 Player2 PHYSICS DEBUG:`)
-        console.log(`   Position: Y=${this.y.toFixed(1)}, targetY=${groundLevel}`)
-        console.log(`   Velocity: vY=${body.velocity.y.toFixed(1)}`)
-        console.log(`   Collision: blocked.down=${body.blocked.down}, touching.down=${body.touching.down}`)
-        console.log(`   Body size: ${body.width}x${body.height}, offset=(${body.offset.x}, ${body.offset.y})`)
-        this.lastDebugTime = currentTime
-      }
-    }
+    // Proper ground detection using physics body
+    this.isOnGround = body.touching.down || (this.y >= groundLevel - 5 && body.velocity.y >= 0)
     
-    // **IMPROVED GROUND STATUS** - consider player state
-    // During jumping state, use physics; otherwise use position
-    if (this.playerState === "jumping") {
-      // In jumping state, use velocity and collision detection
-      this.isOnGround = false // Force air status during jump
-    } else {
-      // Normal state, use position-based detection
-      this.isOnGround = this.y >= groundLevel - 10
+    // **LANDING DETECTION** - transition from jumping to idle
+    if (this.playerState === "jumping" && this.isOnGround) {
+      this.playerState = "idle"
+      body.setVelocityY(0) // Stop downward movement
+      this.play(this.getAnimationKey("idle"), true)
+      this.resetOriginAndOffset()
+      this.lastAnimationChange = this.scene.time.now
+      console.log(`🛬 ${this.playerSide} LANDED!`)
+      
+      // Clear jump timers
+      this.clearJumpTimers()
     }
     
     // **OPTIONAL POSITION CORRECTION** - gentle adjustment only
     if (this.y > groundLevel + 10) {
       console.log(`📍 ${this.playerSide} GENTLE POSITION ADJUST: Y=${this.y.toFixed(1)} → ${groundLevel}`)
       this.setY(groundLevel)
+      body.setVelocityY(0)
     }
     
-    // **BASIC BOUNDARY ENFORCEMENT** - only prevent going completely off screen
+    // **BASIC BOUNDARY ENFORCEMENT** - prevent going off screen
     const leftBound = 10
     const rightBound = 1142  // screenWidth - 10
     
     if (this.x < leftBound) {
       this.setX(leftBound)
+      body.setVelocityX(0)
     } else if (this.x > rightBound) {
       this.setX(rightBound)
+      body.setVelocityX(0)
     }
     
-    // **VELOCITY SANITY CHECK** - prevent excessive velocities only
+    // **VELOCITY SANITY CHECK** - prevent excessive velocities
     if (Math.abs(body.velocity.x) > 800) {
       body.setVelocityX(Math.sign(body.velocity.x) * 800)
     }
     
     if (Math.abs(body.velocity.y) > 1200) {
       body.setVelocityY(Math.sign(body.velocity.y) * 1200)
+    }
+    
+    // Debug logging for Player2
+    if (this.playerSide === "right") {
+      const currentTime = this.scene.time.now
+      if (!this.lastDebugTime || currentTime - this.lastDebugTime > 1000) {
+        console.log(`📊 Player2 PHYSICS: Y=${this.y.toFixed(1)}, vY=${body.velocity.y.toFixed(1)}, ground=${this.isOnGround}, state=${this.playerState}`)
+        this.lastDebugTime = currentTime
+      }
     }
   }
 
@@ -435,10 +456,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private handleSlidingState(): void {
-    // Continue sliding movement
+    // Continue sliding movement with gradual deceleration
     if (this.body) {
-      const slideVelocity = this.facingRight ? playerConfig.slideSpeed.value : -playerConfig.slideSpeed.value
-      this.body.setVelocityX(slideVelocity)
+      const slideAcceleration = 1200 // Slide deceleration
+      const slideDirection = this.facingRight ? 1 : -1
+      this.body.setAccelerationX(-slideDirection * slideAcceleration) // Friction-like deceleration
     }
   }
 
@@ -453,26 +475,28 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private handleJumpingState(leftKey: boolean, rightKey: boolean): void {
-    // **SIMPLIFIED JUMP STATE HANDLING** - no input reading here
-    // Jump timers handle the physics, just allow normal horizontal movement
-    
+    // During jump, apply acceleration just like on ground
     const body = this.body as Phaser.Physics.Arcade.Body
+    const moveAcceleration = 1500
+    let accelerationX = 0
     
-    // Apply horizontal movement during jump (same as normal movement)
-    let velocityX = 0
     if (leftKey && !rightKey) {
-      velocityX = -playerConfig.moveSpeed.value
+      accelerationX = -moveAcceleration
       this.facingRight = false
     } else if (rightKey && !leftKey) {
-      velocityX = playerConfig.moveSpeed.value
+      accelerationX = moveAcceleration
       this.facingRight = true
+    } else {
+      // Deceleration when no keys pressed
+      accelerationX = body.velocity.x > 0 ? -moveAcceleration * 0.8 : moveAcceleration * 0.8
     }
     
-    body.setVelocityX(velocityX)
+    // Apply acceleration during jump
+    body.setAccelerationX(accelerationX)
     
     // Reduced debug output
-    if (velocityX !== 0) {
-      console.log(`🚀 ${this.playerSide} JUMPING MOVE: vX=${velocityX}, vY=${body.velocity.y.toFixed(1)}`)
+    if (accelerationX !== 0) {
+      console.log(`🚀 ${this.playerSide} JUMPING ACCEL: aX=${accelerationX}, vY=${body.velocity.y.toFixed(1)}`)
     }
   }
 
@@ -488,20 +512,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return // Sliding movement is handled in handleSlidingState
     }
     
-    // Horizontal movement
-    let velocityX = 0
+    // Horizontal movement with acceleration for realistic physics
+    const moveAcceleration = 1500 // Acceleration per frame
+    let accelerationX = 0
+    
     if (leftKey && !rightKey) {
-      velocityX = -playerConfig.moveSpeed.value
+      accelerationX = -moveAcceleration
       this.facingRight = false
     } else if (rightKey && !leftKey) {
-      velocityX = playerConfig.moveSpeed.value
+      accelerationX = moveAcceleration
       this.facingRight = true
     } else {
-      velocityX = 0
+      // Deceleration when no keys pressed
+      accelerationX = body.velocity.x > 0 ? -moveAcceleration * 0.8 : moveAcceleration * 0.8
     }
     
-    // Set horizontal velocity (kicking doesn't prevent horizontal movement)
-    body.setVelocityX(velocityX)
+    // Apply acceleration (physics-based)
+    body.setAccelerationX(accelerationX)
     
     // **ACTION PRIORITY SYSTEM** - prevent conflicting actions
     let actionTaken = false
@@ -510,7 +537,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (upKey && this.isOnGround && this.playerState === "idle" && !actionTaken) {
       this.playerState = "jumping"
       body.setVelocityY(-playerConfig.jumpPower.value)
-      console.log(`🚀 ${this.playerSide} MANUAL JUMP! velY=${-playerConfig.jumpPower.value}`)
+      console.log(`🚀 ${this.playerSide} JUMP! velY=${-playerConfig.jumpPower.value}`)
       actionTaken = true
       
       // **IMMEDIATELY START JUMP ANIMATION**
@@ -521,21 +548,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       // Clear any existing jump timers
       this.clearJumpTimers()
       
-      // Set timer to bring player back down (since no gravity)
-      this.jumpFallTimer = this.scene.time.delayedCall(300, () => {
-        if (this.playerState === "jumping") {
-          body.setVelocityY(playerConfig.jumpPower.value * 0.8) // Fall down
-          console.log(`⬇️ ${this.playerSide} MANUAL FALL! velY=${playerConfig.jumpPower.value * 0.8}`)
-        }
-      })
-      
-      // Land after total jump time
-      this.jumpLandTimer = this.scene.time.delayedCall(600, () => {
-        if (this.playerState === "jumping") {
-          this.setY(648) // Force land on ground
-          body.setVelocityY(0)
-          this.playerState = "idle"
-          console.log(`🛬 ${this.playerSide} MANUAL LAND!`)
+      // Transition to fall animation when velocity changes
+      this.jumpFallTimer = this.scene.time.delayedCall(150, () => {
+        if (this.playerState === "jumping" && body.velocity.y > 0) {
+          this.play(this.getAnimationKey("jump_down"), true)
+          this.resetOriginAndOffset()
+          this.lastAnimationChange = this.scene.time.now
         }
       })
     }
@@ -550,31 +568,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (kickKey && this.kickCooldown <= 0 && this.playerState !== "sliding" && !actionTaken) {
       this.startKick()
       actionTaken = true
-    }
-    
-    // **SPECIAL CASE: AIR KICK** - allow kicking while jumping for combo moves
-    if (kickKey && this.kickCooldown <= 0 && this.playerState === "jumping") {
-      console.log(`🚀⚽ ${this.playerSide} AIR KICK COMBO! Interrupting jump.`)
-      
-      // **STORE CURRENT VELOCITY** - preserve jump physics
-      const currentVelY = body.velocity.y
-      
-      // **DON'T CLEAR JUMP TIMERS** - let original jump continue
-      // this.clearJumpTimers() // REMOVED to prevent flight
-      
-      this.playerState = "kicking" // Switch to kicking state
-      this.kickTimer = playerConfig.kickDuration.value * 1000
-      this.kickCooldown = 500
-      this.kickSound.play()
-      
-      // **PROPERLY SET AIR KICK ANIMATION**
-      this.play(this.getAnimationKey("kick"), true)
-      this.resetOriginAndOffset() // ✅ Reset origin for kick animation
-      this.lastAnimationChange = this.scene.time.now // ✅ Update animation timer
-      
-      // **NO EXTRA UPWARD FORCE** - maintain original jump trajectory
-      // body.setVelocityY(body.velocity.y - 150) // REMOVED to prevent flight
-      console.log(`🦵 ${this.playerSide} AIR KICK! Maintaining velY=${currentVelY.toFixed(1)}`)
     }
     
     // Debug for Player2
@@ -610,6 +603,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.kickCooldown = 500 // 0.5 second cooldown
     this.kickSound.play()
     this.play(this.getAnimationKey("kick"), true)
+    
+    // **CRITICAL** - Immediately set origin for kick frame
+    this.scene.time.delayedCall(0, () => {
+      this.resetOriginAndOffset()
+      this.setFlipX(!this.facingRight)
+    })
+    
     console.log(`🦵 ${this.playerSide} START KICK - timer set to ${this.kickTimer}ms`)
   }
 
