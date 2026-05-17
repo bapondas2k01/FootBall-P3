@@ -85,7 +85,13 @@ export class AIController {
       controls.kick = false // Prevent kick spam
     }
     
+    // Debug logging (remove after testing)
+    if (Math.random() < 0.02) { // Log 2% of frames
+      console.log(`🤖 AI Update: action=${this.currentAction}, move=[${controls.left ? 'L' : '-'}${controls.right ? 'R' : '-'}], jump=${controls.jump}, kick=${controls.kick}`)
+    }
+    
     // Update player with AI controls
+    // Parameter order: deltaTime, leftKey, rightKey, upKey (jump), downKey (slide), kickKey
     this.player.update(deltaTime, controls.left, controls.right, controls.jump, controls.slide, controls.kick)
   }
 

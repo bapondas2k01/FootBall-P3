@@ -467,8 +467,13 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private setupAI(): void {
+    console.log(`🤖 setupAI called. Current gameMode: ${this.gameMode}`)
     if (this.gameMode === "1vAI") {
+      console.log(`✅ Initializing AIController for Player 2 in 1vAI mode`)
       this.aiController = new AIController(this, this.player2, this.ball, this.player1, "medium")
+      console.log(`✅ AIController successfully created and assigned`)
+    } else {
+      console.log(`⚠️ Not initializing AI - gameMode is ${this.gameMode}`)
     }
   }
 
@@ -584,16 +589,11 @@ export default class GameScene extends Phaser.Scene {
       // Apply enhanced kick to ball with all parameters including charge and momentum
       this.ball.kick(kickInfo.force, player.y, kickInfo.type, ballDistance, kickInfo.chargeAmount, kickInfo.playerVelocity)
       
-      // **ONLY TRIGGER KICK ANIMATION IF NOT SLIDING**
-      // Only auto-kick for AI player (player2 in 1vAI mode)
-      // Manual players (player1, or both in 1v1) only kick via input
+      // **AUTO-TRIGGER KICK ANIMATION ON PROPER BALL CONTACT**
+      // Trigger kick animation for all players when they make proper contact with ball
       if (!player.isSliding() && !player.isKicking()) {
-        if (player === this.player2 && this.gameMode === "1vAI") {
-          player.triggerKick()
-          console.log(`🦵 Kick animation triggered for AI player`)
-        } else {
-          console.log(`⚠️ Auto-kick disabled for manual player - input only`)
-        }
+        player.triggerKick()
+        console.log(`🦵 Kick animation triggered on ball contact`)
       } else if (player.isSliding()) {
         console.log(`🏃 ${player.getPlayerSide()} sliding - no kick animation switch`)
       }
@@ -794,7 +794,7 @@ export default class GameScene extends Phaser.Scene {
         this.cursors.down!.isDown, 
         this.shiftKey.isDown
       )
-    } else {
+    } else if (this.gameMode === "1vAI") {
       // Player 1 vs AI
       this.player1.update(delta, 
         this.wasdKeys.A.isDown, 
@@ -807,7 +807,11 @@ export default class GameScene extends Phaser.Scene {
       // AI controls player 2
       if (this.aiController) {
         this.aiController.update(delta)
+      } else {
+        console.warn(`⚠️ AIController not initialized in 1vAI mode!`)
       }
+    } else {
+      console.warn(`⚠️ Unknown gameMode: ${this.gameMode}`)
     }
     
     // Update ball for stability checks
