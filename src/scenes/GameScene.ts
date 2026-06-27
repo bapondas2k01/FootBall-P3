@@ -39,6 +39,7 @@ export default class GameScene extends Phaser.Scene {
   private wasdKeys!: { W: Phaser.Input.Keyboard.Key, A: Phaser.Input.Keyboard.Key, S: Phaser.Input.Keyboard.Key, D: Phaser.Input.Keyboard.Key }
   private spaceKey!: Phaser.Input.Keyboard.Key
   private shiftKey!: Phaser.Input.Keyboard.Key
+  private pKey!: Phaser.Input.Keyboard.Key
   
   // Sounds
   private backgroundMusic!: Phaser.Sound.BaseSound
@@ -218,19 +219,6 @@ export default class GameScene extends Phaser.Scene {
     
     // Listen for game end event
     this.events.on("gameEnd", this.handleGameEnd, this)
-    
-    // Listen for menu pause/resume events
-    this.events.on("pauseGame", () => {
-      if (!this.gameUI.isPaused()) {
-        this.pauseGame()
-      }
-    }, this)
-    
-    this.events.on("resumeGame", () => {
-      if (this.gameUI.isPaused()) {
-        this.resumeGame()
-      }
-    }, this)
   }
 
   private setupInput(): void {
@@ -239,6 +227,16 @@ export default class GameScene extends Phaser.Scene {
     this.wasdKeys = this.input.keyboard!.addKeys("W,A,S,D") as any
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
     this.shiftKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT)
+    this.pKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.P)
+    
+    // Pause/resume functionality
+    this.pKey.on("down", () => {
+      if (this.gameUI.isPaused()) {
+        this.resumeGame()
+      } else {
+        this.pauseGame()
+      }
+    })
     
     // ESC to go back to mode select
     const escKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
@@ -467,13 +465,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private setupAI(): void {
-    console.log(`🤖 setupAI called. Current gameMode: ${this.gameMode}`)
     if (this.gameMode === "1vAI") {
-      console.log(`✅ Initializing AIController for Player 2 in 1vAI mode`)
       this.aiController = new AIController(this, this.player2, this.ball, this.player1, "medium")
-      console.log(`✅ AIController successfully created and assigned`)
-    } else {
-      console.log(`⚠️ Not initializing AI - gameMode is ${this.gameMode}`)
     }
   }
 
@@ -584,16 +577,15 @@ export default class GameScene extends Phaser.Scene {
       const kickInfo = player.getKickInfo()
       const ballDistance = Phaser.Math.Distance.Between(player.x, player.y, this.ball.x, this.ball.y)
       
-      console.log(`💥 Enhanced kick: type=${kickInfo.type}, distance=${kickInfo.distance}, charge=${(kickInfo.chargeAmount * 100).toFixed(0)}%`)
+      console.log(`💥 Enhanced kick: type=${kickInfo.type}, distance=${kickInfo.distance}, ballDistance=${ballDistance.toFixed(1)}`)
       
-      // Apply enhanced kick to ball with all parameters including charge and momentum
-      this.ball.kick(kickInfo.force, player.y, kickInfo.type, ballDistance, kickInfo.chargeAmount, kickInfo.playerVelocity)
+      // Apply enhanced kick to ball with all parameters
+      this.ball.kick(kickInfo.force, player.y, kickInfo.type, ballDistance)
       
-      // **AUTO-TRIGGER KICK ANIMATION ON PROPER BALL CONTACT**
-      // Trigger kick animation for all players when they make proper contact with ball
+      // **ONLY TRIGGER KICK ANIMATION IF NOT SLIDING**
       if (!player.isSliding() && !player.isKicking()) {
         player.triggerKick()
-        console.log(`🦵 Kick animation triggered on ball contact`)
+        console.log(`🦵 Kick animation triggered for ${player.getPlayerSide()}`)
       } else if (player.isSliding()) {
         console.log(`🏃 ${player.getPlayerSide()} sliding - no kick animation switch`)
       }
@@ -794,7 +786,7 @@ export default class GameScene extends Phaser.Scene {
         this.cursors.down!.isDown, 
         this.shiftKey.isDown
       )
-    } else if (this.gameMode === "1vAI") {
+    } else {
       // Player 1 vs AI
       this.player1.update(delta, 
         this.wasdKeys.A.isDown, 
@@ -807,11 +799,7 @@ export default class GameScene extends Phaser.Scene {
       // AI controls player 2
       if (this.aiController) {
         this.aiController.update(delta)
-      } else {
-        console.warn(`⚠️ AIController not initialized in 1vAI mode!`)
       }
-    } else {
-      console.warn(`⚠️ Unknown gameMode: ${this.gameMode}`)
     }
     
     // Update ball for stability checks

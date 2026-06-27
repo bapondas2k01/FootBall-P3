@@ -21,7 +21,7 @@ export default class ModeSelectScene extends Phaser.Scene {
     this.add.rectangle(centerX, centerY, screenSize.width.value, screenSize.height.value, 0x000000, 0.5)
 
     // Title
-    this.add.text(centerX, centerY - 207, 'SELECT GAME MODE', {
+    this.add.text(centerX, centerY - 180, 'SELECT GAME MODE', {
       fontSize: '50px',
       fontFamily: 'Arial Black, sans-serif',
       color: '#ffffff',
@@ -76,7 +76,7 @@ export default class ModeSelectScene extends Phaser.Scene {
     })
 
     // Instructions
-    this.add.text(centerX, centerY + 193, 'Choose your opponent and start playing!', {
+    this.add.text(centerX, centerY + 180, 'Choose your opponent and start playing!', {
       fontSize: '16px',
       fontFamily: 'Arial, sans-serif',
       color: '#cccccc',
@@ -96,54 +96,9 @@ export default class ModeSelectScene extends Phaser.Scene {
   ): Phaser.GameObjects.Container {
     const container = this.add.container(x, y)
     
-    // Neon color selection
-    const neonColor = mode === 'pvp' ? 0x00ffff : 0xffaa00 // Cyan for PvP, Orange for PvAI
-    const neonColorHex = mode === 'pvp' ? '#00ffff' : '#ffaa00'
-    const boxWidth = 240
-    const boxHeight = 280
-    
-    // Create a container for the neon border effect
-    const borderContainer = this.add.graphics()
-    borderContainer.setPosition(x, y - 42)
-    
-    // Draw main neon border - stroke only
-    borderContainer.lineStyle(3, neonColor, 1.0)
-    borderContainer.strokeRoundedRect(-boxWidth/2, -boxHeight/2, boxWidth, boxHeight, 15)
-    
-    // Draw outer glow layer (slightly larger)
-    const glowGraphics1 = this.add.graphics()
-    glowGraphics1.lineStyle(6, neonColor, 0.4)
-    glowGraphics1.strokeRoundedRect(x - boxWidth/2 - 3, y - boxHeight/2 - 3 - 42, boxWidth + 6, boxHeight + 6, 15)
-    
-    // Draw another glow layer
-    const glowGraphics2 = this.add.graphics()
-    glowGraphics2.lineStyle(10, neonColor, 0.2)
-    glowGraphics2.strokeRoundedRect(x - boxWidth/2 - 6, y - boxHeight/2 - 6 - 42, boxWidth + 12, boxHeight + 12, 15)
-    
-    // Animate glow
-    this.tweens.add({
-      targets: [glowGraphics1, glowGraphics2],
-      alpha: { from: 0.2, to: 0.8 },
-      duration: 1200,
-      repeat: -1,
-      yoyo: true,
-      ease: 'Sine.inOut'
-    })
-    
-    // Animate border brightness
-    this.tweens.add({
-      targets: borderContainer,
-      alpha: { from: 0.8, to: 1.0 },
-      duration: 800,
-      repeat: -1,
-      yoyo: true,
-      ease: 'Sine.inOut'
-    })
-
-    // Background box (dark)
-    const box = this.add.rectangle(0, 0, boxWidth - 6, boxHeight - 6, 0x0a0a2e, 0.95)
-    box.setStrokeStyle(1, neonColor)
-    box.setAlpha(0.8)
+    // Background box
+    const box = this.add.rectangle(0, 0, 220, 260, 0x1a1a1a, 0.8)
+    box.setStrokeStyle(3, 0xff6b35)
     container.add(box)
 
     // Player 1
@@ -151,21 +106,13 @@ export default class ModeSelectScene extends Phaser.Scene {
       .setScale(0.4)
     container.add(player1)
 
-    // VS text with strong neon effect
+    // VS text
     const vs = this.add.text(0, 20, vsText, {
-      fontSize: '36px',
+      fontSize: '32px',
       fontFamily: 'Arial Black, sans-serif',
-      color: neonColorHex,
-      stroke: neonColorHex,
-      strokeThickness: 4,
-      shadow: { 
-        offsetX: 0, 
-        offsetY: 0, 
-        color: neonColorHex, 
-        blur: 15, 
-        fill: true,
-        stroke: true
-      }
+      color: '#ff6b35',
+      stroke: '#ffffff',
+      strokeThickness: 2
     }).setOrigin(0.5, 0.5)
     container.add(vs)
 
@@ -173,73 +120,42 @@ export default class ModeSelectScene extends Phaser.Scene {
     const player2 = this.add.image(40, -40, mode === 'pvp' ? player2Sprite : 'player_red_front')
       .setScale(0.4)
     if (mode === 'pva') {
-      player2.setTint(0xff0000)
+      player2.setTint(0xff0000) // Red tint for AI
     }
     container.add(player2)
 
-    // Mode label with strong neon glow
+    // Mode label
     const modeLabel = this.add.text(0, 80, label, {
-      fontSize: '24px',
+      fontSize: '20px',
       fontFamily: 'Arial Black, sans-serif',
-      color: neonColorHex,
-      align: 'center',
-      stroke: neonColorHex,
-      strokeThickness: 2,
-      shadow: { 
-        offsetX: 0, 
-        offsetY: 0, 
-        color: neonColorHex, 
-        blur: 12, 
-        fill: true,
-        stroke: true
-      }
+      color: labelColor,
+      align: 'center'
     }).setOrigin(0.5, 0.5)
     container.add(modeLabel)
 
-    // AI indicator for PvA
+    // AI indicator
     if (mode === 'pva') {
-      const aiLabel = this.add.text(0, 110, '🤖 AI OPPONENT', {
+      const aiLabel = this.add.text(0, 110, '🤖 AI Opponent', {
         fontSize: '14px',
-        fontFamily: 'Arial Black, sans-serif',
-        color: '#ff00ff',
-        stroke: '#ff00ff',
-        strokeThickness: 2,
-        shadow: { 
-          offsetX: 0, 
-          offsetY: 0, 
-          color: '#ff00ff', 
-          blur: 8, 
-          fill: true 
-        }
+        fontFamily: 'Arial, sans-serif',
+        color: '#ff0000'
       }).setOrigin(0.5, 0.5)
       container.add(aiLabel)
     }
 
-    // Start button with neon style
+    // Start button
     const startBtn = this.add.text(0, 150, 'START GAME', {
       fontSize: '18px',
       fontFamily: 'Arial Black, sans-serif',
       color: '#000000',
-      backgroundColor: neonColorHex,
-      padding: { x: 20, y: 12 },
-      stroke: neonColorHex,
-      strokeThickness: 2,
-      shadow: { 
-        offsetX: 0, 
-        offsetY: 0, 
-        color: neonColorHex, 
-        blur: 8, 
-        fill: true 
-      }
+      backgroundColor: labelColor,
+      padding: { x: 15, y: 10 }
     }).setOrigin(0.5, 0.5)
     startBtn.setInteractive({ useHandCursor: true })
     container.add(startBtn)
 
-    // Button animations
     startBtn.on('pointerover', () => {
-      startBtn.setScale(1.12)
-      startBtn.setBackgroundColor(neonColorHex)
-      startBtn.setColor('#000000')
+      startBtn.setScale(1.1)
       if (this.sound.get('button_click')) {
         this.sound.play('button_click', { volume: audioConfig.sfxVolume.value })
       }
@@ -247,17 +163,16 @@ export default class ModeSelectScene extends Phaser.Scene {
 
     startBtn.on('pointerout', () => {
       startBtn.setScale(1)
-      startBtn.setBackgroundColor(neonColorHex)
-      startBtn.setColor('#000000')
     })
 
     startBtn.on('pointerdown', () => {
       console.log(`🎮 Starting game: ${mode === 'pvp' ? 'Player vs Player' : 'Player vs AI'}`)
+      // Store game mode for GameScene to use
       this.registry.set('gameMode', mode)
       this.scene.start('GameScene')
     })
 
-    // Make container interactive
+    // Make entire container interactive
     container.setInteractive()
 
     return container
