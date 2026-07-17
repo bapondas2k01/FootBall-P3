@@ -1,0 +1,3 @@
+    flutter clean
+    flutter run
+    
