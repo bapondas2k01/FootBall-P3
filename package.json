@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:controller": "node server.js",
     "build": "vite build",
     "preview": "vite preview",
     "download-assets": "node download-assets.js",
@@ -12,8 +13,7 @@
   },
   "dependencies": {
     "phaser": "3.87.0",
-    "phaser3-rex-plugins": "^1.80.16",
-    "ws": "^8.18.0"
+    "phaser3-rex-plugins": "^1.80.16"
   },
   "devDependencies": {
     "globals": "^15.14.0",

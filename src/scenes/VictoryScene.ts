@@ -168,7 +168,7 @@ export default class VictoryScene extends Phaser.Scene {
 
   private createPlayerPoses(): void {
     const centerX = screenSize.width.value / 2
-    const poseY = 420 // Position below victory text, above score
+    const poseY = 460 // Position below victory text, above score; moved down 40px
     
     if (this.victoryData.winner === 1) {
       // P1 wins: P1 victory pose, P2 defeat pose
@@ -474,7 +474,7 @@ export default class VictoryScene extends Phaser.Scene {
       duration: 400,
       ease: 'Power2',
       onComplete: () => {
-        this.scene.start("StartScene")
+        this.scene.start("ModeSelectScene")
       }
     })
   }

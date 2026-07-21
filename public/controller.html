@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Phone Controller</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #111; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .panel { width: min(95vw, 480px); background: #1f2937; border-radius: 18px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p { color: #cbd5e1; margin-top: 0; }
+    .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+    button { border: 0; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; background: #2563eb; color: white; touch-action: manipulation; }
+    button.active { background: #16a34a; }
+    .small { font-size: 13px; opacity: .8; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>Phone Controller</h1>
+    <p>Use this on your phone while connected to the same Wi-Fi.</p>
+    <div class="row">
+      <button id="leftBtn" data-player="p1" data-action="left">◀ Left</button>
+      <button id="rightBtn" data-player="p1" data-action="right">Right ▶</button>
+    </div>
+    <div class="row">
+      <button id="jumpBtn" data-player="p1" data-action="jump">Jump</button>
+      <button id="kickBtn" data-player="p1" data-action="kick">Kick</button>
+    </div>
+    <div class="row">
+      <button id="slideBtn" data-player="p1" data-action="slide">Slide</button>
+      <button id="p2Btn" data-player="p2" data-action="right">Player 2</button>
+    </div>
+    <p class="small">Tip: tap the Player 2 button to switch the controls to the right-side player.</p>
+  </div>
+  <script>
+    const state = { player: 'p1' }
+    const buttons = Array.from(document.querySelectorAll('button'))
+    const setActive = (button, value) => {
+      button.classList.toggle('active', value)
+    }
+
+    const sendAction = async (action, value) => {
+      const payload = { player: state.player, action, value }
+      await fetch('/api/controls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+    }
+
+    buttons.forEach(button => {
+      const down = () => {
+        const { action } = button.dataset
+        setActive(button, true)
+        sendAction(action, true)
+      }
+      const up = () => {
+        const { action } = button.dataset
+        setActive(button, false)
+        sendAction(action, false)
+      }
+
+      button.addEventListener('touchstart', down, { passive: true })
+      button.addEventListener('touchend', up)
+      button.addEventListener('mousedown', down)
+      button.addEventListener('mouseup', up)
+      button.addEventListener('mouseleave', up)
+      button.addEventListener('touchcancel', up)
+    })
+
+    document.getElementById('p2Btn').addEventListener('click', () => {
+      state.player = state.player === 'p1' ? 'p2' : 'p1'
+      document.getElementById('p2Btn').textContent = state.player === 'p2' ? 'Player 2 ✓' : 'Player 2'
+    })
+  </script>
+</body>
+</html>
