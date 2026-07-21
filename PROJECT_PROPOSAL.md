@@ -48,7 +48,8 @@ This project aims to deliver a fully functional, interactive soccer/football gam
 
 #### 4. **AI System**
 - **Intelligent AI Opponent:** Advanced AI controller for single-player mode
-- **Adaptive Behavior:** AI responds to player position and ball location
+- **Adaptive Behavior:** AI responds to player position, ball trajectory, and goal proximity
+- **High Ball Interception:** AI can jump to intercept overhead passes and shots
 - **Challenge Levels:** Varying difficulty through AI behavior tuning
 
 #### 5. **Game UI**

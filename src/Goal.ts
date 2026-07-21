@@ -87,61 +87,53 @@ export class Goal extends Phaser.GameObjects.Container {
 
 
   private setupGoalZone(): void {
-    // Create invisible goal zone for goal detection - reasonable size
-    const goalWidth = fieldConfig.goalWidth.value * 1.2 // Slightly wider entrance (144px)
-    const goalHeight = fieldConfig.goalHeight.value * 1.5 // Match visual goal height (120px)
-    const goalDepth = 40 // How deep the goal zone extends
+    // Create a trigger zone matching the actual opening between the posts.
+    const goalWidth = Math.max(70, fieldConfig.goalWidth.value - 40) // Narrow the opening by 20px per side
+    const goalHeight = Math.max(90, fieldConfig.goalHeight.value * 1.2)
+    const zoneOffsetX = 0
+    const zoneOffsetY = -goalHeight / 2 + 10
     
-    // Position goal zone to extend into the goal area
-    const zoneOffsetX = this.goalSide === "left" ? -goalDepth/2 : goalDepth/2
-    
-    this.goalZone = this.scene.add.zone(zoneOffsetX, -goalHeight / 2, goalWidth, goalHeight)
+    this.goalZone = this.scene.add.zone(zoneOffsetX, zoneOffsetY, goalWidth, goalHeight)
     this.scene.physics.add.existing(this.goalZone, true)
     
     // Set as trigger (no collision, only overlap detection)
     const body = this.goalZone.body as Phaser.Physics.Arcade.StaticBody
     body.setSize(goalWidth, goalHeight)
     
-    console.log(`🥅 ${this.goalSide.toUpperCase()} GOAL ZONE: Width=${goalWidth}, Height=${goalHeight}, OffsetX=${zoneOffsetX}`)
+    console.log(`🥅 ${this.goalSide.toUpperCase()} GOAL ZONE: Width=${goalWidth}, Height=${goalHeight}, OffsetX=${zoneOffsetX}, OffsetY=${zoneOffsetY}`)
     
     this.add(this.goalZone)
   }
 
   private setupCollisionBodies(): void {
-    const goalWidth = fieldConfig.goalWidth.value * 1.2 // Match the goal zone (144px)
-    const goalHeight = fieldConfig.goalHeight.value * 1.5 // Match the visual goal (120px)
+    const goalWidth = Math.max(80, fieldConfig.goalWidth.value * 1.2)
+    const goalHeight = Math.max(100, fieldConfig.goalHeight.value * 1.5)
     const postThickness = 8 // Reasonable post thickness
+    const inwardOffsetX = 20
+    const downwardOffsetY = 10
+    const openingWidth = Math.max(40, goalWidth - inwardOffsetX * 2)
     
     // Create invisible collision bodies for goal posts
     // (The visual goal posts are already handled by the goal image)
     
     // Create crossbar (top horizontal bar collision)
-    const crossbar = this.scene.add.rectangle(0, -goalHeight + postThickness/2, goalWidth, postThickness, 0xffffff, 0)
+    const crossbar = this.scene.add.rectangle(0, -goalHeight + postThickness / 2 + downwardOffsetY, goalWidth, postThickness, 0xffffff, 0)
     this.scene.physics.add.existing(crossbar, true)
     const crossbarBody = crossbar.body as Phaser.Physics.Arcade.StaticBody
     this.crossbar = crossbarBody
     this.add(crossbar)
     
-    // Create post collision bodies based on goal side
-    let leftPostX, rightPostX
+    const leftPostX = -openingWidth / 2
+    const rightPostX = openingWidth / 2
+    const postY = -goalHeight / 2 + downwardOffsetY
     
-    if (this.goalSide === "left") {
-      // Left goal: opening faces right, so collision posts are on the left side
-      leftPostX = -goalWidth / 2  // Left post collision
-      rightPostX = -goalWidth / 2 + postThickness // Back post collision
-    } else {
-      // Right goal: opening faces left, so collision posts are on the right side  
-      leftPostX = goalWidth / 2 - postThickness  // Back post collision
-      rightPostX = goalWidth / 2   // Right post collision
-    }
-    
-    const leftPost = this.scene.add.rectangle(leftPostX, -goalHeight / 2, postThickness, goalHeight, 0xffffff, 0)
+    const leftPost = this.scene.add.rectangle(leftPostX, postY, postThickness, goalHeight, 0xffffff, 0)
     this.scene.physics.add.existing(leftPost, true)
     const leftPostBody = leftPost.body as Phaser.Physics.Arcade.StaticBody
     this.leftPost = leftPostBody
     this.add(leftPost)
     
-    const rightPost = this.scene.add.rectangle(rightPostX, -goalHeight / 2, postThickness, goalHeight, 0xffffff, 0)
+    const rightPost = this.scene.add.rectangle(rightPostX, postY, postThickness, goalHeight, 0xffffff, 0)
     this.scene.physics.add.existing(rightPost, true)
     const rightPostBody = rightPost.body as Phaser.Physics.Arcade.StaticBody
     this.rightPost = rightPostBody

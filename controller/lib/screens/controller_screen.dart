@@ -45,9 +45,7 @@ class _ControllerScreenState extends State<ControllerScreen> {
   @override
   void dispose() {
     _socketService.close();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
   }
 
@@ -64,8 +62,11 @@ class _ControllerScreenState extends State<ControllerScreen> {
   }
 
   void _sendButtonEvent(String button, String action) {
+    final playerKey = widget.player == 'p2' || widget.player == 'player2'
+        ? 'p2'
+        : 'p1';
     _socketService.sendButtonEvent(
-      player: widget.player,
+      player: playerKey,
       button: button,
       action: action,
       isLongPress: false,
@@ -93,17 +94,30 @@ class _ControllerScreenState extends State<ControllerScreen> {
                   ),
                   Text(
                     widget.player.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: _isConnected ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                      color: _isConnected
+                          ? Colors.green.withOpacity(0.2)
+                          : Colors.red.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       _connectionMessage,
-                      style: TextStyle(color: _isConnected ? Colors.green : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: _isConnected ? Colors.green : Colors.redAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -116,9 +130,17 @@ class _ControllerScreenState extends State<ControllerScreen> {
               bottom: 40,
               child: Row(
                 children: [
-                  _buildControlButton('L', Icons.arrow_back, Colors.blueGrey),
+                  _buildControlButton(
+                    'left',
+                    Icons.arrow_back,
+                    Colors.blueGrey,
+                  ),
                   const SizedBox(width: 20),
-                  _buildControlButton('R', Icons.arrow_forward, Colors.blueGrey),
+                  _buildControlButton(
+                    'right',
+                    Icons.arrow_forward,
+                    Colors.blueGrey,
+                  ),
                 ],
               ),
             ),
@@ -129,11 +151,11 @@ class _ControllerScreenState extends State<ControllerScreen> {
               bottom: 40,
               child: Row(
                 children: [
-                  _buildActionButton('SLIDE', 'DOWN', Colors.indigoAccent),
+                  _buildActionButton('SLIDE', 'slide', Colors.indigoAccent),
                   const SizedBox(width: 15),
-                  _buildActionButton('KICK', 'KICK', Colors.orangeAccent),
+                  _buildActionButton('KICK', 'kick', Colors.orangeAccent),
                   const SizedBox(width: 15),
-                  _buildActionButton('JUMP', 'JUMP', Colors.cyanAccent),
+                  _buildActionButton('JUMP', 'jump', Colors.cyanAccent),
                 ],
               ),
             ),
@@ -174,12 +196,22 @@ class _ControllerScreenState extends State<ControllerScreen> {
             end: Alignment.bottomRight,
           ),
           shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         alignment: Alignment.center,
         child: Text(
           label,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
         ),
       ),
     );

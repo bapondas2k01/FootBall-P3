@@ -55,22 +55,28 @@ export default class ModeSelectScene extends Phaser.Scene {
     )
 
     // Back button
+    const backButtonScale = 0.2
     const backButton = this.add.image(91, 60, 'back_button')
-      .setScale(0.4)
+      .setScale(backButtonScale)
       .setInteractive({ useHandCursor: true })
 
     backButton.on('pointerover', () => {
-      backButton.setScale(0.22)
+      backButton.setScale(backButtonScale * 1.1)
       if (this.sound.get('button_click')) {
         this.sound.play('button_click', { volume: audioConfig.sfxVolume.value })
       }
     })
 
     backButton.on('pointerout', () => {
-      backButton.setScale(0.2)
+      backButton.setScale(backButtonScale)
     })
 
     backButton.on('pointerdown', () => {
+      backButton.setScale(backButtonScale * 0.9)
+    })
+
+    backButton.on('pointerup', () => {
+      backButton.setScale(backButtonScale * 1.1)
       console.log("⬅️ Going back to LandingScene")
       this.scene.start('LandingScene')
     })

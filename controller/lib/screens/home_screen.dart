@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/controller_mode.dart';
 import '../widgets/player_card.dart';
+import '../src/discovery.dart';
 import 'controller_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,43 +15,28 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _ipController = TextEditingController(
-    text: 'Searching for game...',
+    text: kIsWeb ? 'http://localhost:5173' : '',
   );
   ControllerMode _selectedMode = ControllerMode.oneVOne;
-  RawDatagramSocket? _udpSocket;
+  final DiscoveryService _discoveryService = DiscoveryService();
   bool _isAutoConnected = false;
 
   @override
   void initState() {
     super.initState();
-    _startDiscovery();
+    if (!kIsWeb) {
+      _startDiscovery();
+    }
   }
 
   void _startDiscovery() async {
     try {
-      _udpSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 41234);
-      _udpSocket?.broadcastEnabled = true;
-      _udpSocket?.listen((RawSocketEvent event) {
-        if (event == RawSocketEvent.read) {
-          Datagram? dg = _udpSocket?.receive();
-          if (dg != null) {
-            String message = utf8.decode(dg.data);
-            if (message.startsWith('FOOTBALL_GAME_SERVER:')) {
-              List<String> parts = message.split(':');
-              if (parts.length >= 3) {
-                String ip = parts[1];
-                String port = parts[2];
-                String fullHost = 'http://$ip:$port';
-                
-                if (_ipController.text != fullHost && !_isAutoConnected) {
-                  setState(() {
-                    _ipController.text = fullHost;
-                    _isAutoConnected = true;
-                  });
-                }
-              }
-            }
-          }
+      await _discoveryService.start((fullHost) {
+        if (_ipController.text != fullHost && !_isAutoConnected) {
+          setState(() {
+            _ipController.text = fullHost;
+            _isAutoConnected = true;
+          });
         }
       });
     } catch (e) {
@@ -60,18 +46,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _udpSocket?.close();
+    _discoveryService.stop();
     _ipController.dispose();
     super.dispose();
   }
 
   void _openController(String player) {
+    final address = _ipController.text.trim();
+    final playerKey = player == 'player2' ? 'p2' : 'p1';
+    if (address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Enter the controller server address before opening the controller.',
+          ),
+        ),
+      );
+      return;
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ControllerScreen(
-          gameAddress: _ipController.text.trim(),
+          gameAddress: address,
           selectedMode: _selectedMode,
-          player: player,
+          player: playerKey,
         ),
       ),
     );
@@ -108,7 +107,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white24,
+                      ),
                     ),
                 ],
               ),
@@ -158,12 +160,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           horizontal: 16,
                           vertical: 14,
                         ),
-                        hintText: 'Searching...',
+                        hintText: kIsWeb
+                            ? 'Enter controller server URL, e.g. http://localhost:5173'
+                            : 'Searching...',
                         hintStyle: const TextStyle(
                           color: Color.fromRGBO(255, 255, 255, 0.5),
                         ),
                       ),
                     ),
+                    if (kIsWeb)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: Text(
+                          'For web builds, enter the controller server address manually. You can use http://localhost:5173 if the server is on this machine.',
+                          style: TextStyle(color: Colors.white60, fontSize: 12),
+                        ),
+                      ),
                   ],
                 ),
               ),

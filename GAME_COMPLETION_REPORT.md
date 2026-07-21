@@ -19,7 +19,12 @@ Your Arcade Soccer game from Gambo.ai has been fully integrated with all availab
 
 ### What Was Integrated
 
-#### 🎨 Game Objects
+#### � Gameplay Updates
+- AI behavior was refined to chase, attack, and defend based on ball state.
+- AI can now jump to intercept balls passing over its head.
+- Goal scoring was tuned to use a precise goal-opening detection area and correctly count own goals.
+
+#### �🎨 Game Objects
 - Soccer ball (sprite)
 - Goal posts (6 variants: standard, cartoon, fixed, with left/right variants)
 - Field tileset for advanced level design

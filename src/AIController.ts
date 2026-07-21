@@ -10,8 +10,8 @@ export class AIController {
   
   // AI behavior timers and states
   private reactionTime = 200 // ms delay for AI reactions
-  private lastDecisionTime = 0
-  private currentAction: "idle" | "chase" | "defend" | "attack" = "idle"
+  private lastDecisionTime = -9999
+  private currentAction: "idle" | "chase" | "defend" | "attack" = "chase"
   private actionTimer = 0
   private jumpTimer = 0
   private kickTimer = 0
@@ -64,7 +64,7 @@ export class AIController {
     this.kickTimer -= deltaTime
     
     // Make decisions periodically with more stable intervals
-    if (this.scene.time.now - this.lastDecisionTime > this.reactionTime / this.reactionSpeed) {
+    if (this.scene.time.now - this.lastDecisionTime >= this.reactionTime / this.reactionSpeed) {
       this.makeDecision()
       this.lastDecisionTime = this.scene.time.now
     }
@@ -115,8 +115,8 @@ export class AIController {
       this.currentAction = "defend"
       this.actionTimer = 600 + Math.random() * 300
     } else {
-      // Default behavior - position strategically
-      this.currentAction = "idle"
+      // Default behavior - proactively move toward the ball even when not yet contested
+      this.currentAction = "chase"
       this.actionTimer = 400 + Math.random() * 200
     }
   }
@@ -141,30 +141,30 @@ export class AIController {
     const playerPos = { x: this.player.x, y: this.player.y }
     const ballVelocity = this.ball.getVelocity()
     
-    // Predict ball position
-    const predictedBallX = ballPos.x + ballVelocity.x * 0.5
+    // Predict ball position more smoothly
+    const predictedBallX = ballPos.x + ballVelocity.x * 0.7
+    const targetX = Phaser.Math.Linear(playerPos.x, predictedBallX, 0.12)
+    const distanceToTarget = targetX - playerPos.x
+    const deadZone = 15
     
-    // Move toward predicted ball position
-    const targetX = predictedBallX + (Math.random() - 0.5) * (1 - this.moveAccuracy) * 100
-    
-    if (Math.abs(playerPos.x - targetX) > 20) {
-      if (playerPos.x < targetX) {
+    if (Math.abs(distanceToTarget) > deadZone) {
+      if (distanceToTarget > 0) {
         controls.right = true
       } else {
         controls.left = true
       }
     }
     
-    // Jump if ball is high
-    if (ballPos.y < playerPos.y - 30 && this.jumpTimer <= 0) {
+    // Jump if ball is higher than the player and still in front
+    if (ballPos.y < playerPos.y - 30 && Math.abs(ballPos.x - playerPos.x) < 120 && this.jumpTimer <= 0) {
       controls.jump = true
-      this.jumpTimer = 1000 // Prevent rapid jumping
+      this.jumpTimer = 900
     }
     
-    // Kick if close enough
-    if (Phaser.Math.Distance.Between(playerPos.x, playerPos.y, ballPos.x, ballPos.y) < 60 && this.kickTimer <= 0) {
+    // Kick when close to the ball
+    if (Phaser.Math.Distance.Between(playerPos.x, playerPos.y, ballPos.x, ballPos.y) < 55 && this.kickTimer <= 0) {
       controls.kick = true
-      this.kickTimer = 800
+      this.kickTimer = 650
     }
     
     return controls
@@ -175,38 +175,34 @@ export class AIController {
     const playerPos = { x: this.player.x, y: this.player.y }
     const opponentPos = { x: this.opponent.x, y: this.opponent.y }
     
-    // Determine opponent's goal
-    const isRightSide = this.player.getPlayerSide() === "right"
-    const opponentGoalX = isRightSide ? this.scene.cameras.main.width * 0.1 : this.scene.cameras.main.width * 0.9
+    // Earlier decision and smoother movement toward the ball
+    const predictedBallX = ballPos.x + this.ball.getVelocity().x * 0.6
+    const targetX = Phaser.Math.Linear(playerPos.x, predictedBallX, 0.14)
+    const distanceToTarget = targetX - playerPos.x
+    const deadZone = 12
     
-    // Move toward ball aggressively
-    const distanceToBall = Math.abs(playerPos.x - ballPos.x)
-    if (distanceToBall > 10) {
-      if (playerPos.x < ballPos.x) {
+    if (Math.abs(distanceToTarget) > deadZone) {
+      if (distanceToTarget > 0) {
         controls.right = true
       } else {
         controls.left = true
       }
     }
     
-    // Jump if ball is high
-    if (ballPos.y < playerPos.y - 20 && this.jumpTimer <= 0) {
+    if (ballPos.y < playerPos.y - 20 && Math.abs(ballPos.x - playerPos.x) < 130 && this.jumpTimer <= 0) {
       controls.jump = true
-      this.jumpTimer = 800
+      this.jumpTimer = 750
     }
     
-    // Kick toward opponent's goal
     const distanceToKick = Phaser.Math.Distance.Between(playerPos.x, playerPos.y, ballPos.x, ballPos.y)
-    if (distanceToKick < 70 && this.kickTimer <= 0) {
+    if (distanceToKick < 65 && this.kickTimer <= 0) {
       controls.kick = true
-      this.kickTimer = 600
+      this.kickTimer = 550
     }
     
-    // Slide tackle if opponent is close to ball
     const opponentToBall = Phaser.Math.Distance.Between(opponentPos.x, opponentPos.y, ballPos.x, ballPos.y)
     const playerToOpponent = Phaser.Math.Distance.Between(playerPos.x, playerPos.y, opponentPos.x, opponentPos.y)
-    
-    if (opponentToBall < 80 && playerToOpponent < 100 && this.aggressiveness > Math.random()) {
+    if (opponentToBall < 80 && playerToOpponent < 90 && this.aggressiveness > Math.random() * 1.2) {
       controls.slide = true
     }
     
@@ -256,27 +252,32 @@ export class AIController {
     const playerPos = { x: this.player.x, y: this.player.y }
     const ballPos = { x: this.ball.x, y: this.ball.y }
     
-    // Determine strategic position
     const isRightSide = this.player.getPlayerSide() === "right"
     const centerX = this.scene.cameras.main.width * 0.5
     const strategicX = isRightSide ? centerX + 150 : centerX - 150
     
-    // Move to strategic position
-    if (Math.abs(playerPos.x - strategicX) > 50) {
-      if (playerPos.x < strategicX) {
+    const moveTargetX = Phaser.Math.Linear(playerPos.x, strategicX, 0.08)
+    const distanceToTarget = moveTargetX - playerPos.x
+    const deadZone = 20
+    
+    if (Math.abs(distanceToTarget) > deadZone) {
+      if (distanceToTarget > 0) {
         controls.right = true
       } else {
         controls.left = true
       }
     }
     
-    // Occasionally move toward ball if it's not too far
     const distanceToBall = Phaser.Math.Distance.Between(playerPos.x, playerPos.y, ballPos.x, ballPos.y)
-    if (distanceToBall < 200 && Math.random() < 0.3) {
-      if (playerPos.x < ballPos.x) {
-        controls.right = true
-      } else {
-        controls.left = true
+    if (distanceToBall < 220 && Math.random() < 0.4) {
+      const approachX = Phaser.Math.Linear(playerPos.x, ballPos.x, 0.1)
+      const approachDistance = approachX - playerPos.x
+      if (Math.abs(approachDistance) > 20) {
+        if (approachDistance > 0) {
+          controls.right = true
+        } else {
+          controls.left = true
+        }
       }
     }
     

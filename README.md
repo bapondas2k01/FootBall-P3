@@ -5,7 +5,7 @@ A dynamic football (soccer) game built with **Phaser 3**, **TypeScript**, and **
 ## 🎮 Features
 
 - **Interactive Gameplay**: Play as a football player with smooth controls and realistic ball physics
-- **AI Opponents**: Face intelligent AI controllers that adapt to your gameplay
+- **AI Opponents**: Face intelligent AI controllers that proactively chase the ball, defend their goal, and jump for overhead shots
 - **Multiple Game Scenes**: Landing scene, mode selection, loading, gameplay, and victory screens
 - **Optimized Performance**: Built with Vite for fast development and production builds
 - **TypeScript Support**: Full TypeScript implementation for type-safe development
@@ -22,6 +22,12 @@ A dynamic football (soccer) game built with **Phaser 3**, **TypeScript**, and **
 
 - Node.js (v16 or higher recommended)
 - npm or yarn package manager
+
+## 🔄 Recent Gameplay Updates
+
+- **Proactive AI**: The AI now uses chase/attack/defend decision-making and will engage the ball without waiting for player input.
+- **High ball interception**: AI will jump for balls traveling over its head when they are within reach.
+- **Refined scoring**: Goal detection uses a precise goal opening zone, including own-goal compatibility when the ball enters a player's net.
 
 ## 🚀 Quick Start
 
@@ -100,7 +106,18 @@ package.json                   # Project dependencies and scripts
 - **Space**: Kick/jump
 - **Mouse/Touch**: Aim and shoot (varies by scene)
 
-## 🔧 Development Notes
+## � Controller Support
+
+- **Phone controller** is supported via the built-in controller server.
+- Start the controller server with:
+  ```bash
+  npm run dev:controller
+  ```
+- Open `http://<your-computer-ip>:5173/controller.html` on your phone.
+- Use the on-screen buttons to send actions for **P1** or **P2**.
+- The game listens for control events and maps them to left, right, jump, slide, and kick.
+
+## �🔧 Development Notes
 
 ### Asset Management
 

@@ -22,6 +22,7 @@ export default class GameScene extends Phaser.Scene {
   // Game state
   private gameMode: "1v1" | "1vAI" = "1v1"
   private isGameActive = false
+  private isKickoffPending = false
   private isGamePaused = false
   private player1Score = 0
   private player2Score = 0
@@ -40,6 +41,12 @@ export default class GameScene extends Phaser.Scene {
   private spaceKey!: Phaser.Input.Keyboard.Key
   private shiftKey!: Phaser.Input.Keyboard.Key
   private pKey!: Phaser.Input.Keyboard.Key
+
+  private networkControlState: Record<'p1' | 'p2', Record<'left' | 'right' | 'jump' | 'slide' | 'kick', boolean>> = {
+    p1: { left: false, right: false, jump: false, slide: false, kick: false },
+    p2: { left: false, right: false, jump: false, slide: false, kick: false },
+  }
+  private networkEventSource?: EventSource
   
   // Sounds
   private backgroundMusic!: Phaser.Sound.BaseSound
@@ -163,9 +170,11 @@ export default class GameScene extends Phaser.Scene {
 
   private setupGoals(): void {
     // **BIGGER GOALS MOVED TOWARD CENTER** - larger goals positioned closer to field center
-    const goalMargin = 80 // Increased distance from screen edges, moving goals toward center
-    const leftGoalX = goalMargin  // Left goal closer to center = 80
-    const rightGoalX = screenSize.width.value - goalMargin  // Right goal closer to center = 1072
+    const goalMargin = 80 // Base margin from edges
+    const goalShift = 30 // Move both posts 25px toward the center
+    const leftGoalX = goalMargin + goalShift  // Left goal moved 25px inward
+    const rightGoalX = screenSize.width.value - goalMargin - goalShift  // Right goal moved 25px inward
+    const goalY = this.groundTopY + 10 // Move goal posts 10px downward
     
     console.log(`🥅 GOAL POSITIONS CALCULATION:`)
     console.log(`   Screen width: ${screenSize.width.value}`)
@@ -173,10 +182,10 @@ export default class GameScene extends Phaser.Scene {
     console.log(`   Goal margin: ${goalMargin}`)
     console.log(`   Left goal X: ${leftGoalX}`)
     console.log(`   Right goal X: ${rightGoalX}`)
-    console.log(`   Goal Y (ground top): ${this.groundTopY}`)
+    console.log(`   Goal Y (down 10px): ${goalY}`)
     
-    this.leftGoal = new Goal(this, leftGoalX, this.groundTopY, "left")
-    this.rightGoal = new Goal(this, rightGoalX, this.groundTopY, "right")
+    this.leftGoal = new Goal(this, leftGoalX, goalY, "left")
+    this.rightGoal = new Goal(this, rightGoalX, goalY, "right")
     
     console.log(`🥅 GOALS CREATED:`)
     console.log(`   Left goal actual position: (${this.leftGoal.x}, ${this.leftGoal.y})`)
@@ -193,9 +202,9 @@ export default class GameScene extends Phaser.Scene {
     const player1X = centerX - 200 // Left side player, positioned between goal and center
     const player2X = centerX + 200 // Right side player, positioned between goal and center
     
-    // Position players exactly on ground line for perfect alignment
-    const playerY = this.groundTopY // Players exactly on ground line
-    console.log(`👥 CREATING PLAYERS AT Y: ${playerY} (on ground line)`)
+    // Move players 10px downward from the baseline
+    const playerY = this.groundTopY + 10
+    console.log(`👥 CREATING PLAYERS AT Y: ${playerY} (10px lower than baseline)`)
     this.player1 = new Player(this, player1X, playerY, "left")
     this.player2 = new Player(this, player2X, playerY, "right")
   }
@@ -203,15 +212,14 @@ export default class GameScene extends Phaser.Scene {
   private setupBall(): void {
     const centerX = screenSize.width.value / 2
     
-    // Position ball so its BOTTOM sits ON TOP of the ground surface
+    // Position ball in the same baseline row as players and goal posts
     const ballRadius = 25 // Ball radius
-    const ballBottomY = this.groundTopY - 1 // Ball bottom 1px ABOVE ground to prevent penetration
-    const ballCenterY = ballBottomY - ballRadius // Ball center position
+    const playerY = this.groundTopY + 10
+    const ballCenterY = playerY // Ball center aligned with players and goals
     
-    console.log(`⚽ CREATING BALL: bottom at Y=${ballBottomY}, center at Y=${ballCenterY}`)
-    console.log(`🏗️ GROUND surface at Y=${this.groundTopY}, ball sits ON TOP`)
-    console.log(`👥 PLAYERS at Y=${this.groundTopY} - ON ground surface`)
-    this.ball = new Ball(this, centerX, ballCenterY) // Ball sitting on ground surface
+    console.log(`⚽ CREATING BALL: center at Y=${ballCenterY}`)
+    console.log(`👥 PLAYERS at Y=${playerY} - same row as ball`)
+    this.ball = new Ball(this, centerX, ballCenterY)
   }
 
   private setupUI(): void {
@@ -246,6 +254,48 @@ export default class GameScene extends Phaser.Scene {
         this.scene.start("ModeSelectScene")
       }
     })
+
+    this.connectToController()
+  }
+
+  private connectToController(): void {
+    if (typeof window === "undefined" || this.networkEventSource) {
+      return
+    }
+
+    const hostname = window.location.hostname || "localhost"
+    const controllerBaseUrl = `http://${hostname}:5173`
+    const eventSource = new EventSource(`${controllerBaseUrl}/events`)
+
+    const handleControllerEvent = (event: MessageEvent<string>) => {
+      try {
+        const payload = JSON.parse(event.data)
+        if (payload.type !== "control") {
+          return
+        }
+
+        const player = payload.player === "p2" ? "p2" : "p1"
+        const action = payload.action as 'left' | 'right' | 'jump' | 'slide' | 'kick'
+        if (action && typeof this.networkControlState[player][action] === "boolean") {
+          this.networkControlState[player][action] = Boolean(payload.value)
+        }
+      } catch (error) {
+        console.warn("⚠️ Could not parse controller event", error)
+      }
+    }
+
+    eventSource.onmessage = handleControllerEvent
+    eventSource.addEventListener("control", handleControllerEvent as EventListener)
+    eventSource.addEventListener("message", handleControllerEvent as EventListener)
+    eventSource.addEventListener("connected", () => {
+      console.log("📡 Phone controller connected")
+    })
+
+    eventSource.onerror = () => {
+      console.warn("⚠️ Phone controller connection lost. Make sure the controller server is running.")
+    }
+
+    this.networkEventSource = eventSource
   }
 
   private setupAudio(): void {
@@ -321,15 +371,19 @@ export default class GameScene extends Phaser.Scene {
     console.log(`   Player1 ↔ Backup Ground: ${p1BackupCollider ? '✅' : '❌'}`)
     console.log(`   Player2 ↔ Backup Ground: ${p2BackupCollider ? '✅' : '❌'}`)
     
-    // Ball collision with goals - add debugging
+    // Ball collision with goals - only count when the ball crosses the actual goal opening
     this.physics.add.overlap(this.ball, this.leftGoal.getGoalZone(), () => {
-      console.log(`🥅 GOAL! Ball entered LEFT goal zone`)
-      this.handleGoal(2) // Player 2 scores
+      if (this.ball.x < this.leftGoal.x + 20 && this.ball.x > this.leftGoal.x - 20) {
+        console.log(`🥅 GOAL! Ball entered LEFT goal opening`)
+        this.handleGoal(2) // Player 2 scores
+      }
     })
     
     this.physics.add.overlap(this.ball, this.rightGoal.getGoalZone(), () => {
-      console.log(`🥅 GOAL! Ball entered RIGHT goal zone`)
-      this.handleGoal(1) // Player 1 scores
+      if (this.ball.x > this.rightGoal.x - 20 && this.ball.x < this.rightGoal.x + 20) {
+        console.log(`🥅 GOAL! Ball entered RIGHT goal opening`)
+        this.handleGoal(1) // Player 1 scores
+      }
     })
     
     // Ball collision with goal posts
@@ -467,11 +521,14 @@ export default class GameScene extends Phaser.Scene {
   private setupAI(): void {
     if (this.gameMode === "1vAI") {
       this.aiController = new AIController(this, this.player2, this.ball, this.player1, "medium")
+      // Force an immediate initial decision so AI responds right away, even during kickoff delay
+      this.aiController.update(0)
     }
   }
 
   private startGame(): void {
-    this.isGameActive = true
+    this.isGameActive = false
+    this.isKickoffPending = true
     this.setupAI()
     this.whistleSound.play()
     
@@ -502,14 +559,12 @@ export default class GameScene extends Phaser.Scene {
       this.stunStars2.setAngle(0)
     }
     
-    // Reset ball position (center of field, sitting ON TOP of ground surface)
-    const ballRadius = 25 // Ball radius
-    const ballBottomY = this.groundTopY - 1 // Ball bottom 1px ABOVE ground surface
-    const ballCenterY = ballBottomY - ballRadius // Ball center position
+    // Reset ball position to the new lowered row shared with players and goals
+    const playerY = this.groundTopY + 10
+    const ballCenterY = playerY
     
-    console.log(`🏁 RESETTING BALL: bottom at Y=${ballBottomY}, center at Y=${ballCenterY}`)
-    console.log(`🏗️ GROUND surface at Y=${this.groundTopY}, ball sits ON TOP`)
-    console.log(`👥 PLAYERS at Y=${this.groundTopY} - ON ground surface`)
+    console.log(`🏁 RESETTING BALL: center at Y=${ballCenterY}`)
+    console.log(`👥 PLAYERS at Y=${playerY} - same row as ball`)
     
     // **USE ENHANCED RESET METHODS**
     this.ball.resetPosition(centerX, ballCenterY)
@@ -517,7 +572,6 @@ export default class GameScene extends Phaser.Scene {
     // Reset player positions to their sides (consistent with setup)
     const player1X = centerX - 200 // Left side, positioned between goal and center
     const player2X = centerX + 200 // Right side, positioned between goal and center
-    const playerY = this.groundTopY // Players exactly on ground line
     
     console.log(`🏁 RESETTING PLAYERS TO Y: ${playerY} (on ground line)`)
     
@@ -537,6 +591,7 @@ export default class GameScene extends Phaser.Scene {
     // Brief delay before allowing movement
     this.time.delayedCall(gameConfig.kickoffDelay.value * 1000, () => {
       this.isGameActive = true
+      this.isKickoffPending = false
       console.log(`✅ Game reactivated after kickoff delay`)
     })
   }
@@ -763,38 +818,36 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (!this.isGameActive || this.gameUI.isPaused()) return
-    
-    // No cooldowns needed
+    if (this.gameUI.isPaused()) return
     
     // Update players
     if (this.gameMode === "1v1") {
-      // Player 1 (WASD + Space)
-      this.player1.update(delta, 
-        this.wasdKeys.A.isDown, 
-        this.wasdKeys.D.isDown, 
-        this.wasdKeys.W.isDown, 
-        this.wasdKeys.S.isDown, 
-        this.spaceKey.isDown
-      )
+      const p1Left = this.wasdKeys.A.isDown || this.networkControlState.p1.left
+      const p1Right = this.wasdKeys.D.isDown || this.networkControlState.p1.right
+      const p1Up = this.wasdKeys.W.isDown || this.networkControlState.p1.jump
+      const p1Down = this.wasdKeys.S.isDown || this.networkControlState.p1.slide
+      const p1Kick = this.spaceKey.isDown || this.networkControlState.p1.kick
+
+      // Player 1 (WASD + Space + phone controls)
+      this.player1.update(delta, p1Left, p1Right, p1Up, p1Down, p1Kick)
       
-      // Player 2 (Arrow keys + Shift)
-      this.player2.update(delta, 
-        this.cursors.left!.isDown, 
-        this.cursors.right!.isDown, 
-        this.cursors.up!.isDown, 
-        this.cursors.down!.isDown, 
-        this.shiftKey.isDown
-      )
+      const p2Left = this.cursors.left!.isDown || this.networkControlState.p2.left
+      const p2Right = this.cursors.right!.isDown || this.networkControlState.p2.right
+      const p2Up = this.cursors.up!.isDown || this.networkControlState.p2.jump
+      const p2Down = this.cursors.down!.isDown || this.networkControlState.p2.slide
+      const p2Kick = this.shiftKey.isDown || this.networkControlState.p2.kick
+
+      // Player 2 (Arrow keys + Shift + phone controls)
+      this.player2.update(delta, p2Left, p2Right, p2Up, p2Down, p2Kick)
     } else {
+      const p1Left = this.wasdKeys.A.isDown || this.networkControlState.p1.left
+      const p1Right = this.wasdKeys.D.isDown || this.networkControlState.p1.right
+      const p1Up = this.wasdKeys.W.isDown || this.networkControlState.p1.jump
+      const p1Down = this.wasdKeys.S.isDown || this.networkControlState.p1.slide
+      const p1Kick = this.spaceKey.isDown || this.networkControlState.p1.kick
+
       // Player 1 vs AI
-      this.player1.update(delta, 
-        this.wasdKeys.A.isDown, 
-        this.wasdKeys.D.isDown, 
-        this.wasdKeys.W.isDown, 
-        this.wasdKeys.S.isDown, 
-        this.spaceKey.isDown
-      )
+      this.player1.update(delta, p1Left, p1Right, p1Up, p1Down, p1Kick)
       
       // AI controls player 2
       if (this.aiController) {
@@ -807,6 +860,11 @@ export default class GameScene extends Phaser.Scene {
     
     // MANUAL COLLISION DETECTION as backup
     this.checkManualCollisions()
+    
+    // Do not process game end while kickoff is pending
+    if (!this.isGameActive && this.isKickoffPending) {
+      return
+    }
     
     // Debug: Log positions and distances every few seconds
     if (Math.floor(time / 1000) % 2 === 0 && time % 1000 < 50) {
