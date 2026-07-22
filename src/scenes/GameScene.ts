@@ -18,12 +18,14 @@ export default class GameScene extends Phaser.Scene {
   private gameUI!: GameUI
   private goalText!: Phaser.GameObjects.Text
   private aiController!: AIController
+  private backButton!: Phaser.GameObjects.Image
   
   // Game state
   private gameMode: "1v1" | "1vAI" = "1v1"
   private isGameActive = false
   private isKickoffPending = false
   private isGamePaused = false
+  private hasMatchEnded = false
   private player1Score = 0
   private player2Score = 0
   
@@ -69,6 +71,7 @@ export default class GameScene extends Phaser.Scene {
     // Reset game state
     this.isGameActive = true
     this.isGamePaused = false
+    this.hasMatchEnded = false
     this.lastGoalTime = 0
     this.lastManualCollisionP1 = 0
     this.lastManualCollisionP2 = 0
@@ -105,6 +108,7 @@ export default class GameScene extends Phaser.Scene {
     this.setupBall()
     this.setupPhysics()       // FINAL: Setup physics and collisions
     this.setupUI()
+    this.setupBackButton()
     this.setupInput()
     this.setupAudio()
     this.setupStunEffects()
@@ -223,10 +227,32 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private setupUI(): void {
-    this.gameUI = new GameUI(this)
-    
-    // Listen for game end event
-    this.events.on("gameEnd", this.handleGameEnd, this)
+    this.gameUI = new GameUI(this, () => this.finishMatchByTime())
+  }
+
+  private setupBackButton(): void {
+    const backButtonScale = 0.14
+    this.backButton = this.add.image(90, 60, "back_button")
+      .setScale(backButtonScale)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(1002)
+
+    this.backButton.on("pointerover", () => {
+      this.backButton.setScale(backButtonScale * 1.06)
+    })
+
+    this.backButton.on("pointerout", () => {
+      this.backButton.setScale(backButtonScale)
+    })
+
+    this.backButton.on("pointerdown", () => {
+      this.backButton.setScale(backButtonScale * 0.95)
+    })
+
+    this.backButton.on("pointerup", () => {
+      this.backButton.setScale(backButtonScale * 1.06)
+      this.returnToModeSelect()
+    })
   }
 
   private setupInput(): void {
@@ -249,13 +275,20 @@ export default class GameScene extends Phaser.Scene {
     // ESC to go back to mode select
     const escKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
     escKey.on("down", () => {
-      if (this.isGameActive) {
-        this.backgroundMusic.stop()
-        this.scene.start("ModeSelectScene")
-      }
+      this.returnToModeSelect()
     })
 
     this.connectToController()
+  }
+
+  private returnToModeSelect(): void {
+    if (this.backgroundMusic) {
+      this.backgroundMusic.stop()
+    }
+    if (this.gameUI) {
+      this.gameUI.destroy()
+    }
+    this.scene.start("ModeSelectScene")
   }
 
   private connectToController(): void {
@@ -763,10 +796,31 @@ export default class GameScene extends Phaser.Scene {
     })
   }
 
+  private finishMatchByTime(): void {
+    if (this.hasMatchEnded) {
+      return
+    }
+
+    const finalScore = {
+      player1Score: this.player1Score,
+      player2Score: this.player2Score,
+      winner: this.player1Score > this.player2Score ? 1 : (this.player2Score > this.player1Score ? 2 : 0)
+    }
+
+    console.log("⏰ Time expired. Ending match.", finalScore)
+    this.handleGameEnd(finalScore)
+  }
+
   private handleGameEnd(data: { player1Score: number, player2Score: number, winner: number }): void {
+    if (this.hasMatchEnded) {
+      return
+    }
+
+    this.hasMatchEnded = true
     console.log("🏁 GameScene: handleGameEnd called with data:", data)
     
     this.isGameActive = false
+    this.isKickoffPending = false
     this.backgroundMusic.stop()
     
     // Prepare victory data

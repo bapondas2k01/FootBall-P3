@@ -15,9 +15,11 @@ export class GameUI {
   private isGamePaused = false
   
   private gameTimer!: Phaser.Time.TimerEvent
+  private onTimeExpired?: () => void
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, onTimeExpired?: () => void) {
     this.scene = scene
+    this.onTimeExpired = onTimeExpired
     this.createUI()
     this.startGameTimer()
   }
@@ -209,12 +211,12 @@ export class GameUI {
       delay: 1000,
       callback: this.updateTimer,
       callbackScope: this,
-      repeat: this.gameTime // Will repeat gameTime times, with updateTimer decrementing
+      repeat: Math.max(this.gameTime - 1, 0)
     })
   }
 
   private updateTimer(): void {
-    this.gameTime--
+    this.gameTime = Math.max(0, this.gameTime - 1)
     console.log(`⏰ Timer update: ${this.gameTime} seconds remaining`)
     this.timerText.setText(this.formatTime(this.gameTime))
     
@@ -239,7 +241,9 @@ export class GameUI {
     // End game when time reaches 0
     if (this.gameTime <= 0) {
       console.log("🏁 Game time ended! Triggering game end...")
-      this.gameTimer.destroy() // Stop the timer
+      if (this.gameTimer?.active) {
+        this.gameTimer.destroy() // Stop the timer
+      }
       this.onGameEnd()
     }
   }
@@ -309,8 +313,12 @@ export class GameUI {
     
     const winner = this.player1Score > this.player2Score ? 1 : (this.player2Score > this.player1Score ? 2 : 0)
     console.log(`🏆 Winner: ${winner === 0 ? 'Draw' : `Player ${winner}`}`)
+
+    if (this.onTimeExpired) {
+      this.onTimeExpired()
+      return
+    }
     
-    // Emit game end event or call scene method
     this.scene.events.emit('gameEnd', {
       player1Score: this.player1Score,
       player2Score: this.player2Score,
@@ -319,7 +327,7 @@ export class GameUI {
   }
 
   public destroy(): void {
-    if (this.gameTimer) {
+    if (this.gameTimer?.active) {
       this.gameTimer.destroy()
     }
   }
